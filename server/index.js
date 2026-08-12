@@ -1,4 +1,5 @@
 require('dotenv').config();
+const http = require('http');
 const { WebSocketServer } = require('ws');
 const admin = require('firebase-admin');
 const { setBroadcast, setOnEvent, snapshot, playerJoined, playerLeft, castVote, submitAnswer } = require('./game');
@@ -50,7 +51,9 @@ setOnEvent((event) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const wss = new WebSocketServer({ port: PORT });
+const server = http.createServer((req, res) => { res.writeHead(200); res.end('ok'); });
+const wss = new WebSocketServer({ server });
+server.listen(PORT);
 const clients = new Map();
 
 const send = (ws, msg) => ws.readyState === 1 && ws.send(JSON.stringify(msg));
