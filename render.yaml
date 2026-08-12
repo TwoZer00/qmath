@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: qmath-server
+    name: qmath
     runtime: node
     rootDir: server
     buildCommand: npm install
