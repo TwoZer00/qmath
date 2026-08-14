@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { View, TextInput, StyleSheet } from 'react-native';
 import CalcKey from './CalcKey';
 
@@ -9,13 +9,19 @@ const ROWS = [
   ['DEL', '0', 'OK'],
 ];
 
-export default function NumPad({ onPress, onSubmit, disabled, playKey }) {
+export default function NumPad({ onPress, onSubmit, disabled, playKey, focusKey }) {
   const activeTouchRef = useRef(false);
   const inputRef = useRef(null);
+  const disabledRef = useRef(disabled);
+  const internalRef = useRef('');
+  useEffect(() => { disabledRef.current = disabled; }, [disabled]);
+
+  const focus = useCallback(() => inputRef.current?.focus(), []);
 
   useEffect(() => {
-    if (!disabled) inputRef.current?.focus();
-  }, [disabled]);
+    const t = setTimeout(focus, 50);
+    return () => clearTimeout(t);
+  }, [disabled, focusKey]);
 
   const handleKey = (k) => {
     if (disabled || activeTouchRef.current) return;
@@ -27,16 +33,25 @@ export default function NumPad({ onPress, onSubmit, disabled, playKey }) {
     else onPress(k);
   };
 
-  const handleKeyboardInput = (text) => {
-    if (disabled) return;
-    const last = text.slice(-1);
-    if (/[0-9]/.test(last)) { playKey?.(); onPress(last); }
+  const handleChangeText = (text) => {
+    if (disabledRef.current) return;
+    const prev = internalRef.current;
+    internalRef.current = text;
+    if (text.length < prev.length) {
+      playKey?.(); onPress('⌫');
+    } else {
+      const added = text.slice(prev.length);
+      for (const ch of added) {
+        if (/^[0-9]$/.test(ch)) { playKey?.(); onPress(ch); }
+      }
+    }
   };
 
-  const handleKeyPress = ({ nativeEvent: { key } }) => {
-    if (disabled) return;
-    if (key === 'Backspace') { playKey?.(); onPress('⌫'); }
-    else if (key === 'Enter') onSubmit();
+  const handleSubmit = () => {
+    if (!disabledRef.current) {
+      onSubmit();
+      setTimeout(focus, 50);
+    }
   };
 
   return (
@@ -44,10 +59,11 @@ export default function NumPad({ onPress, onSubmit, disabled, playKey }) {
       <TextInput
         ref={inputRef}
         style={s.hidden}
-        value=""
-        onChangeText={handleKeyboardInput}
-        onKeyPress={handleKeyPress}
-        keyboardType="numeric"
+        onChangeText={handleChangeText}
+        onSubmitEditing={handleSubmit}
+        onBlur={() => setTimeout(focus, 50)}
+        returnKeyType="done"
+        autoFocus
         caretHidden
         showSoftInputOnFocus={false}
       />
@@ -72,5 +88,5 @@ export default function NumPad({ onPress, onSubmit, disabled, playKey }) {
 const s = StyleSheet.create({
   grid: { gap: 8, alignItems: 'center' },
   row: { flexDirection: 'row', gap: 8 },
-  hidden: { position: 'absolute', width: 0, height: 0, opacity: 0 },
+  hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
 });

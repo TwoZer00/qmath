@@ -17,10 +17,7 @@
         "EXPO_PUBLIC_USE_EMULATOR": "false",
         "EXPO_PUBLIC_WS_URL": "wss://qmath.onrender.com",
         "EXPO_PUBLIC_MIN_PLAYERS": "5",
-        "EXPO_PUBLIC_MAX_VOTE_ROUNDS": "2",
-        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCOryq85beezVa3jhEAqBLuTqzndWaY0jU",
-        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "qmath-78ccc.firebaseapp.com",
-        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "qmath-78ccc"
+        "EXPO_PUBLIC_MAX_VOTE_ROUNDS": "2"
       }
     }
   },

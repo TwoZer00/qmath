@@ -1,6 +1,6 @@
 import { signInAnonymously, getIdToken } from 'firebase/auth';
 import { auth } from './firebase';
-import { randomName, getSavedName } from '../utils/names';
+import { nameFromUid, getSavedName } from '../utils/names';
 
 const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://192.168.0.102:3000';
 
@@ -13,7 +13,6 @@ let intentionalClose = false;
 
 const emit = (type, payload = {}) => {
   if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type, ...payload }));
-  else if (__DEV__) console.warn(`[game] emit dropped — ws not open (type: ${type})`);
 };
 
 const on = (type, cb) => {
@@ -51,7 +50,7 @@ export const connect = async () => {
     }
   }
   const saved = await getSavedName();
-  const name = saved || randomName();
+    const name = saved || nameFromUid(user.uid);
 
   return new Promise((resolve, reject) => {
     ws = new WebSocket(WS_URL);

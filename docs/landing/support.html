@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support — Algebrawl</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --surface: #1c1f2a; --surface2: #252836; --border: #3a3f55;
+      --text: #e8eaf0; --text-muted: #8890aa; --text-dim: #4a5068;
+      --blue: #a0c4ff; --accent: #c0392b; --success: #27ae60;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; font-weight: 500; line-height: 1.7; }
+    a { color: var(--blue); }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid var(--border); }
+    .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--blue); letter-spacing: 3px; text-decoration: none; }
+    .nav-links { display: flex; gap: 24px; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; }
+    .nav-links a:hover { color: var(--text); }
+    .content { max-width: 720px; margin: 0 auto; padding: 60px 20px; }
+    .label { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 3px; margin-bottom: 12px; }
+    h1 { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 3px; margin-bottom: 32px; }
+    h2 { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--blue); margin: 40px 0 12px; }
+    p { font-size: 16px; color: var(--text-muted); margin-bottom: 16px; }
+    .faq { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+    .faq-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; }
+    .faq-q { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 17px; color: var(--text); margin-bottom: 8px; letter-spacing: 0.5px; }
+    .faq-a { font-size: 15px; color: var(--text-muted); }
+    .contact-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 28px 24px; margin-top: 40px; }
+    .contact-box p { margin-bottom: 8px; }
+    .contact-box a { font-family: 'Share Tech Mono', monospace; font-size: 15px; color: var(--blue); }
+    footer { border-top: 1px solid var(--border); padding: 32px 40px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-dim); }
+    footer a { color: var(--text-dim); }
+    @media (max-width: 600px) { nav { padding: 16px 20px; } footer { padding: 24px 20px; flex-direction: column; } }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-logo" href="index.html">Algebrawl</a>
+    <div class="nav-links">
+      <a href="index.html#how">How it works</a>
+      <a href="privacy.html">Privacy</a>
+    </div>
+  </nav>
+
+  <div class="content">
+    <div class="label">// support</div>
+    <h1>Support</h1>
+
+    <h2>FAQ</h2>
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q">The app says "Waking up server…" — what does that mean?</div>
+        <div class="faq-a">Our game server runs on a free tier that goes to sleep after inactivity. It takes up to 50 seconds to wake up. Just wait a moment and it will connect automatically.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Why do I need 5 players to start a game?</div>
+        <div class="faq-a">Algebrawl is a multiplayer battle royale — it needs enough players to be competitive. Once 5 players are in the lobby, a vote to start will begin.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">I joined but the game already started. What happens?</div>
+        <div class="faq-a">You'll wait in the lobby and automatically join the next round when the current game ends.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I change my player name?</div>
+        <div class="faq-a">Yes — you can set a custom name from the home screen before joining the lobby.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Does the app require an account?</div>
+        <div class="faq-a">No. Algebrawl uses anonymous authentication — no email, no password, no sign-up required.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">The app is not connecting. What should I do?</div>
+        <div class="faq-a">Check your internet connection and try again. If the problem persists, the server may be temporarily unavailable. Contact us and we'll look into it.</div>
+      </div>
+    </div>
+
+    <div class="contact-box">
+      <p>Can't find what you're looking for? Reach out directly:</p>
+      <a href="mailto:support@twozer00.dev">support@twozer00.dev</a>
+    </div>
+  </div>
+
+  <footer>
+    <span>© 2025 Algebrawl</span>
+    <div style="display:flex;gap:24px;">
+      <a href="index.html">Home</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="mailto:support@twozer00.dev">support@twozer00.dev</a>
+    </div>
+  </footer>
+
+</body>
+</html>

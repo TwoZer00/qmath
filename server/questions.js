@@ -29,10 +29,6 @@ const generateQuestion = (round = 1) => {
     }
   }
 
-  // For subtraction ensure a >= b so result is never negative
-  // (NumPad has no minus key — players can't enter negative answers)
-  if (op === '-' && a < b) { const tmp = a; a = b; b = tmp; }
-
   let result;
   if (op === '+') result = a + b;
   else if (op === '-') result = a - b;

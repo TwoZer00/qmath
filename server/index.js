@@ -29,25 +29,36 @@ if (useEmulator) {
 
 const db = admin.firestore();
 
-let firestoreQueue = Promise.resolve();
-let firestoreQueueSize = 0;
-const FIRESTORE_QUEUE_LIMIT = 50;
+let pendingEvents = [];
 
 setOnEvent((event) => {
-  if (firestoreQueueSize >= FIRESTORE_QUEUE_LIMIT) {
-    log.warn(`Firestore queue full (${FIRESTORE_QUEUE_LIMIT}), dropping event: ${event.type}`);
-    return;
-  }
-  firestoreQueueSize++;
-  firestoreQueue = firestoreQueue.then(async () => {
-    try {
-      await db.collection('events').add({ ...event, timestamp: admin.firestore.FieldValue.serverTimestamp() });
-    } catch (e) {
-      log.error(`Firestore write failed: ${e.message}`);
-    } finally {
-      firestoreQueueSize--;
+  if (event.type === 'game_over') {
+    // Flush all pending events + this one in a single batch
+    const toWrite = [...pendingEvents, event];
+    pendingEvents = [];
+    if (toWrite.length === 0) return;
+    const batches = [];
+    for (let i = 0; i < toWrite.length; i += 500) {
+      batches.push(toWrite.slice(i, i + 500));
     }
-  });
+    batches.forEach(async (chunk) => {
+      const batch = db.batch();
+      chunk.forEach((e) => {
+        batch.set(db.collection('events').doc(), { ...e, timestamp: admin.firestore.FieldValue.serverTimestamp() });
+      });
+      try {
+        await batch.commit();
+        log.info(`Firestore batch committed: ${chunk.length} events`);
+      } catch (e) {
+        log.error(`Firestore batch failed: ${e.message}`);
+      }
+    });
+  } else if (event.type === 'game_reset') {
+    // No winner — flush pending events and discard, avoid accumulation
+    pendingEvents = [];
+  } else {
+    pendingEvents.push(event);
+  }
 });
 
 const PORT = process.env.PORT || 3000;
@@ -58,14 +69,14 @@ const clients = new Map();
 
 const send = (ws, msg) => ws.readyState === 1 && ws.send(JSON.stringify(msg));
 
-// Ping all clients every 30s — drop dead connections (leftover from Render sleep)
+// Ping all clients every 8s — drop dead connections quickly so lobby stays accurate
 setInterval(() => {
   wss.clients.forEach((ws) => {
     if (!ws.isAlive) { ws.terminate(); return; }
     ws.isAlive = false;
     ws.ping();
   });
-}, 30000);
+}, 8000);
 
 setBroadcast((buildMsg) => {
   clients.forEach((ws, uid) => send(ws, buildMsg(uid)));
@@ -104,7 +115,9 @@ wss.on('connection', (ws) => {
           log.warn(`Replaced stale connection for ${msg.name} (${decoded.uid})`);
         }
         uid = decoded.uid;
-        name = (typeof msg.name === 'string' && msg.name.trim()) ? msg.name.trim().slice(0, 20) : 'Jugador';
+        name = (typeof msg.name === 'string' && msg.name.trim())
+          ? msg.name.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, 20) || 'Jugador'
+          : 'Jugador';
         clients.set(uid, ws);
         send(ws, { type: 'AUTH_OK', uid });
         log.info(`Player authenticated: ${name} (${uid})`);
@@ -118,7 +131,6 @@ wss.on('connection', (ws) => {
 
     if (msg.type === 'JOIN') {
       playerJoined(uid, name);
-      send(ws, { type: 'STATE', payload: snapshot(false) });
       log.info(`Player joined lobby: ${name} (${uid})`);
     }
     if (msg.type === 'LEAVE') {

@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { colors, shared, fonts } from '../theme';
+import { colors, fonts } from '../theme';
 import LcdScreen from '../components/LcdScreen';
+import BrandHeader from '../components/BrandHeader';
 import CalcKey from '../components/CalcKey';
+import { nameFromUid } from '../utils/names';
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, settings, uid }) {
   const bootOpacity = useRef(new Animated.Value(0)).current;
   const bootScale = useRef(new Animated.Value(0.96)).current;
   const lcdOpacity = useRef(new Animated.Value(0)).current;
@@ -27,38 +29,50 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={s.container}>
-      <Animated.View style={[shared.calcBody, { opacity: bootOpacity, transform: [{ scale: bootScale }] }]}>
-        <View style={shared.brandRow}>
-          <Text style={shared.brandModel}>fx-BATTLE</Text>
-          <Text style={shared.brandSub}>ROYALE EDITION</Text>
-        </View>
+      <Animated.View style={[s.calcBody, { opacity: bootOpacity, transform: [{ scale: bootScale }] }]}>
+        <BrandHeader />
 
         <Animated.View style={[s.lcdWrap, { opacity: lcdOpacity }]}>
           <LcdScreen>
-            <Text style={s.lcdLabel}>LISTO PARA JUGAR</Text>
-            <Text style={s.lcdSub}>{lcdReady ? 'PRESIONA JUGAR' : ''}</Text>
+            <Text style={s.lcdTitle}>ALGEBRAWL</Text>
+            <Text style={s.lcdLabel}>{lcdReady ? 'LISTO PARA JUGAR_' : ''}</Text>
           </LcdScreen>
         </Animated.View>
 
-        {/* Nombre grabado en el cuerpo */}
-        <View style={s.engraved}>
-          <Text style={s.engravedTitle}>MATH BATTLE ROYALE</Text>
-          <Text style={s.engravedSub}>MULTIPLAYER EDITION</Text>
+        <View style={s.keys}>
+          <CalcKey label="JUGAR" icon="play" variant="action" wide onPress={() => navigation.navigate('Lobby')} />
+          <CalcKey label="STATS" icon="chart-bar" variant="fn" wide onPress={() => navigation.navigate('Stats')} style={{ marginTop: 8 }} />
+          <CalcKey label="SETTINGS" icon="cog-outline" variant="fn" wide onPress={() => navigation.navigate('Settings')} style={{ marginTop: 8 }} />
+          {uid
+            ? <Text style={s.playerHint}>jugando como {settings?.playerName || nameFromUid(uid)}</Text>
+            : <Text style={s.playerHint}>conectando...</Text>
+          }
         </View>
-
-        <CalcKey label="JUGAR" icon="play" variant="action" wide onPress={() => navigation.navigate('Lobby')} />
-        <CalcKey label="STATS" icon="chart-bar" variant="fn" wide onPress={() => navigation.navigate('Stats')} style={{ marginTop: 8 }} />
       </Animated.View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  lcdWrap: { width: '100%', marginBottom: 20 },
-  lcdLabel: { fontFamily: fonts.mono, fontSize: 13, color: colors.lcdText, letterSpacing: 1, marginBottom: 4 },
-  lcdSub: { fontFamily: fonts.mono, fontSize: 11, color: colors.lcdTextDim, letterSpacing: 1 },
-  engraved: { width: '100%', alignItems: 'center', marginBottom: 20, paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border },
-  engravedTitle: { fontFamily: fonts.bodyBold, fontSize: 18, color: colors.textMuted, letterSpacing: 4, textTransform: 'uppercase' },
-  engravedSub: { fontFamily: fonts.bodyMedium, fontSize: 10, color: colors.textMuted, letterSpacing: 3, marginTop: 2, opacity: 0.6 },
+  container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 20 },
+  calcBody: {
+    width: '88%',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderBottomWidth: 6,
+    borderBottomColor: colors.keyShadow,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    alignItems: 'stretch',
+  },
+  lcdWrap: { width: '100%', marginBottom: 12 },
+  keys: { alignItems: 'center' },
+  playerHint: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.textMuted, marginTop: 14, letterSpacing: 0.5 },
+  lcdTitle: { fontFamily: fonts.mono, fontSize: 22, color: colors.lcdText, letterSpacing: 3, marginBottom: 2 },
+  lcdLabel: { fontFamily: fonts.mono, fontSize: 11, color: colors.lcdTextDim, letterSpacing: 1, marginTop: 8 },
 });

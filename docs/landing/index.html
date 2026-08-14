@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Algebrawl — Math Battle Royale</title>
+  <meta name="description" content="Multiplayer math game. Solve fast or get eliminated. Last one standing wins." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #1c1f2a;
+      --surface2: #252836;
+      --border: #3a3f55;
+      --accent: #c0392b;
+      --accent-shadow: #7b241c;
+      --text: #e8eaf0;
+      --text-muted: #8890aa;
+      --text-dim: #4a5068;
+      --lcd-bg: #9db89a;
+      --lcd-text: #1a2e1a;
+      --blue: #a0c4ff;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      min-height: 100vh;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--blue); letter-spacing: 3px; }
+    .nav-links { display: flex; gap: 24px; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
+    .nav-links a { color: var(--text-muted); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    /* HERO */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 20px 60px;
+      gap: 24px;
+    }
+
+    .hero-badge {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--lcd-text);
+      background: var(--lcd-bg);
+      padding: 6px 16px;
+      letter-spacing: 2px;
+    }
+
+    .hero h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(64px, 12vw, 120px);
+      letter-spacing: 6px;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .hero h1 span { color: var(--accent); }
+
+    .hero-sub {
+      font-size: clamp(16px, 3vw, 22px);
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      max-width: 500px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--text);
+      border-bottom: 4px solid var(--accent-shadow);
+    }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border-bottom: 4px solid #1a1d2a;
+      border: 1px solid var(--border);
+      border-bottom: 4px solid #1a1d2a;
+    }
+
+    .btn:hover { opacity: 0.9; text-decoration: none; }
+
+    /* DIVIDER */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* HOW IT WORKS */
+    .section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 20px;
+    }
+
+    .section-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .section h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(36px, 6vw, 56px);
+      letter-spacing: 3px;
+      margin-bottom: 40px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    .step-num {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+
+    .step h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      color: var(--blue);
+    }
+
+    .step p {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* LCD DEMO */
+    .lcd-demo {
+      background: var(--lcd-bg);
+      border-radius: 4px;
+      border: 2px solid #6a8f6a;
+      border-bottom: 4px solid #8aab78;
+      padding: 20px 24px;
+      max-width: 320px;
+      margin: 0 auto 40px;
+    }
+
+    .lcd-demo .lcd-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      color: var(--lcd-text);
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .lcd-demo .lcd-expr {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 28px;
+      color: var(--lcd-text);
+      letter-spacing: 2px;
+    }
+
+    .lcd-demo .lcd-timer {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: #4a6b4a;
+      letter-spacing: 1px;
+      margin-top: 8px;
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    footer a { color: var(--text-dim); }
+    footer a:hover { color: var(--text-muted); }
+
+    .footer-links { display: flex; gap: 24px; }
+
+    @media (max-width: 600px) {
+      nav { padding: 16px 20px; }
+      .nav-links { gap: 16px; font-size: 12px; }
+      footer { padding: 24px 20px; flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <span class="nav-logo">Algebrawl</span>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="support.html">Support</a>
+      <a href="privacy.html">Privacy</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">MATH BATTLE ROYALE</div>
+    <h1>ALGE<span>BRAWL</span></h1>
+    <p class="hero-sub">Solve fast or get eliminated.<br/>Last one standing wins.</p>
+
+    <div class="lcd-demo">
+      <div class="lcd-label">ROUND 3 — 6 PLAYERS LEFT</div>
+      <div class="lcd-expr">47 + 38 = ?</div>
+      <div class="lcd-timer">▶ 4.2s remaining</div>
+    </div>
+
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#">Download on App Store</a>
+      <a class="btn btn-secondary" href="#">Get it on Google Play</a>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section" id="how">
+    <div class="section-label">// how_it_works</div>
+    <h2>Simple Rules.<br/>Brutal Results.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01 —</div>
+        <h3>Join</h3>
+        <p>Enter the global room. No account needed. You get a random name and you're in.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02 —</div>
+        <h3>Solve</h3>
+        <p>Everyone sees the same math problem at the same time. You have 5 seconds.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03 —</div>
+        <h3>Survive</h3>
+        <p>Wrong answer or too slow? You're out. Watch the others fall one by one.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04 —</div>
+        <h3>Win</h3>
+        <p>Be the last one standing. Then do it all over again.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>© 2025 Algebrawl</span>
+    <div class="footer-links">
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="support.html">Support</a>
+      <a href="mailto:support@twozer00.dev">support@twozer00.dev</a>
+    </div>
+  </footer>
+
+</body>
+</html>

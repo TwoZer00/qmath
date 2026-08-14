@@ -1,22 +1,25 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { sendAnswer, leaveLobby } from '../services/game';
 import { colors, shared, fonts } from '../theme';
+import LcdProgressBar from '../components/LcdProgressBar';
 import LcdScreen from '../components/LcdScreen';
 import NumPad from '../components/NumPad';
 import CalcKey from '../components/CalcKey';
+import BrandHeader from '../components/BrandHeader';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 
-const TIME_LIMIT = parseInt(process.env.EXPO_PUBLIC_TIME_LIMIT) || 5;
+const DEFAULT_TIME_LIMIT = parseInt(process.env.EXPO_PUBLIC_TIME_LIMIT) || 5;
 
 export default function GameScreen({ uid, gameState, connStatus, sound, navigation }) {
+  const handleExit = useCallback(() => { leaveLobby(); navigation.replace('Home'); }, [navigation]);
+  const TIME_LIMIT = gameState?.timeLimit ?? DEFAULT_TIME_LIMIT;
   const [answer, setAnswer] = useState('');
   const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
   const timerRef = useRef(null);
   const answeredRef = useRef(false);
-  const progressAnim = useRef(new Animated.Value(1)).current;
-  const progressAnimRef = useRef(null);
+  const eliminatedRef = useRef(false);
   const flashAnim = useRef(new Animated.Value(0)).current;
   const prevEliminated = useRef(false);
   const prevStatus = useRef(null);
@@ -24,11 +27,13 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
   const prevTimeLeft = useRef(TIME_LIMIT);
 
   const question = gameState?.question;
-  const players = gameState?.players || {};
+  const players = gameState?.players ?? {};
   const me = players[uid];
   const eliminated = me?.status === 'eliminated';
+  useEffect(() => { eliminatedRef.current = eliminated; }, [eliminated]);
   const isRoundOver = gameState?.status === 'ROUND_OVER';
-  const answered = me?.answered && !isRoundOver && gameState?.status === 'PLAYING';
+  const isTimeout = gameState?.status === 'TIMEOUT';
+  const answered = me?.answered && !eliminated && !isRoundOver && (gameState?.status === 'PLAYING' || isTimeout);
   const eliminatedThisRound = gameState?.eliminatedThisRound || [];
   const activePlayers = useMemo(
     () => Object.entries(players).filter(([, p]) => p.status === 'active'),
@@ -53,7 +58,12 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
   useEffect(() => {
     if (gameState?.status === 'GAME_OVER') { navigation.replace('GameOver'); return; }
     if (gameState?.status === 'LOBBY') { navigation.replace('Lobby'); return; }
-    if (gameState?.status === 'ROUND_OVER') { clearInterval(timerRef.current); progressAnimRef.current?.stop(); }
+    if (gameState?.status === 'TIMEOUT') {
+      clearInterval(timerRef.current);
+    }
+    if (gameState?.status === 'ROUND_OVER') {
+      clearInterval(timerRef.current);
+    }
     prevStatus.current = gameState?.status;
   }, [gameState?.status]);
 
@@ -62,10 +72,6 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
     answeredRef.current = false;
     setAnswer('');
     setTimeLeft(TIME_LIMIT);
-    progressAnimRef.current?.stop();
-    progressAnim.setValue(1);
-    progressAnimRef.current = Animated.timing(progressAnim, { toValue: 0, duration: TIME_LIMIT * 1000, useNativeDriver: false });
-    progressAnimRef.current.start();
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => { if (t <= 1) { clearInterval(timerRef.current); return 0; } return t - 1; });
@@ -79,7 +85,7 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
       if (eliminatedThisRound.length > 0) setTimeout(() => playEliminated(), 400);
     }
     prevRoundOver.current = isRoundOver;
-  }, [isRoundOver]);
+  }, [isRoundOver, eliminatedThisRound]);
 
   useEffect(() => {
     if (timeLeft <= 3 && timeLeft > 0 && timeLeft !== prevTimeLeft.current && !answered && !eliminated) playTick();
@@ -88,27 +94,58 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
 
   useEffect(() => { if (answered) playCorrect(); }, [answered]);
 
+  const myName = players[uid]?.name;
   useEffect(() => {
-    if (gameState?.status === 'GAME_OVER' && gameState?.winner === players[uid]?.name) playVictory();
-  }, [gameState?.status]);
+    if (gameState?.status === 'GAME_OVER' && gameState?.winner && gameState.winner === myName) playVictory();
+  }, [gameState?.status, myName]);
+
+  const questionRef = useRef(question);
+  useEffect(() => { questionRef.current = question; }, [question]);
+
+  const handleNumPress = useCallback((d) => {
+    if (answeredRef.current || eliminatedRef.current) return;
+    if (d === '⌫') { setAnswer((a) => a.slice(0, -1)); return; }
+    setAnswer((a) => {
+      if (a.length >= 4) return a;
+      return a + d;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!answer) return;
+    const num = parseInt(answer);
+    if (!isNaN(num) && num === Math.abs(questionRef.current?.answer)) resolve(num);
+  }, [answer]);
+
+  const handleNumSubmit = useCallback(() => {
+    if (answer !== '') resolve(parseInt(answer));
+  }, [answer]);
 
   const resolve = (value) => {
-    if (answeredRef.current || eliminated || isNaN(value)) return;
+    if (answeredRef.current || eliminatedRef.current || isNaN(value)) return;
     answeredRef.current = true;
     clearInterval(timerRef.current);
-    progressAnimRef.current?.stop();
     sendAnswer(value);
   };
 
   const round = gameState?.round ?? 1;
   const diffLabel = round <= 2 ? '+  −' : round <= 5 ? '+  −  ±' : round <= 9 ? '+  −  ×' : '+  −  ×  ÷';
 
-  const progressColor = progressAnim.interpolate({
-    inputRange: [0, 0.4, 0.7, 1],
-    outputRange: [colors.accent, colors.warning, colors.success, colors.success],
-  });
 
-  if (!question) return null;
+  if (!question) {
+    return (
+      <View style={s.container}>
+      <BrandHeader sub={`RONDA ${round}`} compact
+        left={<CalcKey icon="arrow-left" variant="fn" onPress={handleExit} />}
+      />
+        <View style={s.centerBox}>
+          <LcdScreen style={s.lcdCenter}>
+            <Text style={s.lcdSub}>SIGUIENTE RONDA...</Text>
+          </LcdScreen>
+        </View>
+      </View>
+    );
+  }
 
   const disconnected = connStatus !== 'ready';
 
@@ -120,24 +157,17 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
           <Text style={s.disconnectText}>⚠ Reconectando...</Text>
         </View>
       )}
-      <View style={s.exitBtn}>
-        <CalcKey icon="arrow-left" variant="fn" onPress={() => { leaveLobby(); navigation.replace('Home'); }} />
-      </View>
-
-      {/* Header */}
-      <View style={s.header}>
-        <Text style={s.playersLeft}><Icon name="account-group" size={14} color={colors.textSecondary} /> {activePlayers.length}</Text>
-        <Text style={s.round}>R{round}  <Text style={s.diff}>{diffLabel}</Text></Text>
-        <Text style={s.timer}>{timeLeft}s</Text>
-      </View>
-      <Animated.View style={[shared.progressBar, { width: progressAnim.interpolate({ inputRange: [0,1], outputRange: ['0%','100%'] }), backgroundColor: progressColor, marginBottom: 16 }]} />
+      <BrandHeader sub={`RONDA ${round}`} compact
+        left={<CalcKey icon="arrow-left" variant="fn" onPress={handleExit} />}
+        right={<Text style={s.timer}>{timeLeft}s</Text>}
+      />
 
       {isRoundOver ? (
         <View style={s.centerBox}>
           <LcdScreen style={s.lcdCenter}>
             {eliminatedThisRound.length > 0 ? (
               <>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <View style={s.iconRowMb8}>
                   <Icon name="skull" size={16} color={colors.lcdText} />
                   <Text style={s.lcdTitle}>ELIMINADOS</Text>
                 </View>
@@ -146,7 +176,7 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
                 ))}
               </>
             ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={s.iconRow}>
                 <Icon name="check-all" size={16} color={colors.lcdText} />
                 <Text style={s.lcdTitle}>TODOS RESPONDIERON</Text>
               </View>
@@ -158,7 +188,7 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
       ) : eliminated ? (
         <View style={s.centerBox}>
           <LcdScreen style={s.lcdCenter}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <View style={s.iconRowMb4}>
               <Icon name="skull-outline" size={18} color={colors.lcdText} />
               <Text style={s.lcdEliminated}>ELIMINADO</Text>
             </View>
@@ -170,7 +200,7 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
       ) : answered ? (
         <View style={s.centerBox}>
           <LcdScreen style={s.lcdCenter}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <View style={s.iconRowMb4}>
               <Icon name="check-circle-outline" size={18} color={colors.lcdText} />
               <Text style={s.lcdCorrect}>OK</Text>
             </View>
@@ -181,21 +211,15 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
       ) : (
         <View style={s.gameBox}>
           <LcdScreen style={s.lcdMain}>
+            <LcdProgressBar timeLeft={timeLeft} total={TIME_LIMIT} />
             <Text style={s.lcdExpr}>{question.expression}</Text>
             <Text style={s.lcdDisplay}>{answer || '_'}</Text>
           </LcdScreen>
           <NumPad
             playKey={playKey}
-            onPress={(d) => {
-              if (answeredRef.current || eliminated) return;
-              let next;
-              if (d === '⌫') next = answer.slice(0, -1);
-              else if (answer.length >= 4) next = answer;
-              else if (d === '0' && answer === '') { resolve(0); return; }
-              else next = answer + d;
-              setAnswer(next);
-            }}
-            onSubmit={() => { if (answer !== '') resolve(parseInt(answer)); }}
+            onPress={handleNumPress}
+            onSubmit={handleNumSubmit}
+            focusKey={question?.startedAt}
           />
         </View>
       )}
@@ -213,19 +237,14 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
 
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 16, paddingTop: 50 },
+  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, paddingTop: 52 },
   disconnectBanner: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: colors.accent, paddingVertical: 6, alignItems: 'center', zIndex: 200 },
   disconnectText: { fontFamily: fonts.bodyBold, color: '#fff', fontSize: 12, letterSpacing: 1 },
-  exitBtn: { alignSelf: 'flex-start', marginBottom: 8 },
   flash: { backgroundColor: colors.accent, zIndex: 99 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  playersLeft: { fontFamily: fonts.bodyBold, color: colors.textSecondary, fontSize: 13, letterSpacing: 2 },
-  round: { fontFamily: fonts.bodyBold, color: colors.textMuted, fontSize: 13, letterSpacing: 2 },
-  diff: { fontFamily: fonts.mono, color: colors.textMuted, fontSize: 11, letterSpacing: 1 },
-  timer: { fontFamily: fonts.mono, color: colors.lcdText, backgroundColor: colors.lcdBg, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 3, fontSize: 22, letterSpacing: 2 },
-  gameBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  lcdMain: { width: '100%', marginBottom: 20, minHeight: 120, justifyContent: 'space-between' },
+  timer: { fontFamily: fonts.mono, color: colors.lcdText, backgroundColor: colors.lcdBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 3, fontSize: 14, letterSpacing: 1 },
+  gameBox: { flex: 1, alignItems: 'center', justifyContent: 'flex-start' },
+  centerBox: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', padding: 16 },
+  lcdMain: { width: '100%', marginBottom: 16, minHeight: 120, justifyContent: 'space-between' },
   lcdCenter: { width: '100%', alignItems: 'center' },
   lcdExpr: { fontFamily: fonts.mono, fontSize: 28, color: colors.lcdTextDim, letterSpacing: 2, marginBottom: 8 },
   lcdDisplay: { fontFamily: fonts.mono, fontSize: 56, color: colors.lcdText, letterSpacing: 4, textAlign: 'right' },
@@ -235,8 +254,10 @@ const s = StyleSheet.create({
   lcdAnswer: { fontFamily: fonts.mono, fontSize: 22, color: colors.lcdText, letterSpacing: 2, marginBottom: 8 },
   lcdQuestion: { fontFamily: fonts.mono, fontSize: 28, color: colors.lcdTextDim, letterSpacing: 2, marginTop: 12 },
   lcdSub: { fontFamily: fonts.mono, fontSize: 12, color: colors.lcdTextDim, letterSpacing: 1, marginTop: 8 },
-  padWrap: { alignItems: 'center', paddingBottom: 8 },
-  playerList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', paddingTop: 8 },
+  iconRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  iconRowMb4: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  iconRowMb8: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  playerList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', paddingTop: 12 },
   playerName: shared.chip,
   playerSelf: { color: colors.keyTextAlt, borderColor: colors.keyTextAlt },
   playerAnswered: { color: colors.success, borderColor: colors.success },

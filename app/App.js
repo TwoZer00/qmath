@@ -8,13 +8,15 @@ import { Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold } from '@exp
 import { ShareTechMono_400Regular } from '@expo-google-fonts/share-tech-mono';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { connect, disconnect, listenState, listenDisconnect } from './src/services/game';
-import { savePlayerName } from './src/utils/names';
+import { useSettings } from './src/hooks/useSettings';
 import { useSound } from './src/hooks/useSound';
+import { auth } from './src/services/firebase';
 import HomeScreen from './src/screens/HomeScreen';
 import LobbyScreen from './src/screens/LobbyScreen';
 import GameScreen from './src/screens/GameScreen';
 import GameOverScreen from './src/screens/GameOverScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -25,7 +27,14 @@ export default function App() {
   const [connStatus, setConnStatus] = useState('connecting');
   const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
   const attemptRef = useRef(0);
-  const sound = useSound();
+  const settings = useSettings();
+  const sound = useSound(settings.soundEnabled);
+  const [localUid, setLocalUid] = useState(null);
+
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged((u) => { if (u) setLocalUid(u.uid); });
+    return unsub;
+  }, []);
 
   const tryConnect = useRef(null);
 
@@ -74,14 +83,17 @@ export default function App() {
 
   if (!fontsLoaded) return null;
 
-  const screenProps = { uid: user?.uid, gameState, connStatus, sound, hasPlayedOnce, onNameSave: savePlayerName };
+  const uid = user?.uid ?? localUid;
+  const screenProps = { uid, gameState, connStatus, sound, hasPlayedOnce, settings };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
       <NavigationContainer>
         <StatusBar style="light" backgroundColor="#0a0a0f" />
         <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#1a1a2e' }, gestureEnabled: false }}>
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Home">
+          {(props) => <HomeScreen {...props} settings={settings} uid={localUid} connStatus={connStatus} />}
+        </Stack.Screen>
         <Stack.Screen name="Lobby">
           {(props) => <LobbyScreen {...props} {...screenProps} />}
         </Stack.Screen>
@@ -93,6 +105,9 @@ export default function App() {
         </Stack.Screen>
         <Stack.Screen name="Stats">
           {(props) => <StatsScreen {...props} uid={user?.uid} />}
+        </Stack.Screen>
+        <Stack.Screen name="Settings">
+          {(props) => <SettingsScreen {...props} settings={settings} uid={localUid} />}
         </Stack.Screen>
       </Stack.Navigator>
       </NavigationContainer>

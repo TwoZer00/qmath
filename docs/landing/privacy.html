@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Algebrawl</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --surface: #1c1f2a; --border: #3a3f55;
+      --text: #e8eaf0; --text-muted: #8890aa; --text-dim: #4a5068;
+      --blue: #a0c4ff; --accent: #c0392b;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; font-weight: 500; line-height: 1.7; }
+    a { color: var(--blue); }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 40px; border-bottom: 1px solid var(--border); }
+    .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--blue); letter-spacing: 3px; text-decoration: none; }
+    .nav-links { display: flex; gap: 24px; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; }
+    .nav-links a:hover { color: var(--text); }
+    .content { max-width: 720px; margin: 0 auto; padding: 60px 20px; }
+    .label { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 3px; margin-bottom: 12px; }
+    h1 { font-family: 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 3px; margin-bottom: 8px; }
+    .updated { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); margin-bottom: 48px; }
+    h2 { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; color: var(--blue); margin: 40px 0 12px; }
+    p { font-size: 16px; color: var(--text-muted); margin-bottom: 16px; }
+    ul { padding-left: 20px; margin-bottom: 16px; }
+    ul li { font-size: 16px; color: var(--text-muted); margin-bottom: 8px; }
+    footer { border-top: 1px solid var(--border); padding: 32px 40px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-dim); }
+    footer a { color: var(--text-dim); }
+    @media (max-width: 600px) { nav { padding: 16px 20px; } footer { padding: 24px 20px; flex-direction: column; } }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-logo" href="index.html">Algebrawl</a>
+    <div class="nav-links">
+      <a href="index.html#how">How it works</a>
+      <a href="support.html">Support</a>
+    </div>
+  </nav>
+
+  <div class="content">
+    <div class="label">// legal</div>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: June 2025</p>
+
+    <p>Algebrawl ("we", "our", or "us") is committed to protecting your privacy. This policy explains what information we collect, how we use it, and your rights.</p>
+
+    <h2>Information We Collect</h2>
+    <p>Algebrawl uses anonymous authentication. We do not require you to create an account or provide any personal information to play.</p>
+    <ul>
+      <li><strong>Anonymous user ID</strong> — generated automatically by Firebase Authentication when you first open the app. This ID is not linked to any personal information.</li>
+      <li><strong>Player name</strong> — a random name assigned automatically (e.g. "Tiger42"). You may optionally set a custom name, which is stored locally on your device.</li>
+      <li><strong>Gameplay events</strong> — game actions such as answers submitted and rounds played are logged to improve game performance. These are associated only with your anonymous ID.</li>
+    </ul>
+
+    <h2>Information We Do Not Collect</h2>
+    <ul>
+      <li>Name, email address, or any contact information</li>
+      <li>Location data</li>
+      <li>Device identifiers beyond what Firebase Authentication generates</li>
+      <li>Payment information</li>
+    </ul>
+
+    <h2>How We Use Your Information</h2>
+    <ul>
+      <li>To operate the real-time multiplayer game</li>
+      <li>To display your name and score to other players during a game session</li>
+      <li>To detect and prevent abuse (e.g. rate limiting)</li>
+    </ul>
+
+    <h2>Third-Party Services</h2>
+    <p>We use the following third-party services:</p>
+    <ul>
+      <li><strong>Firebase Authentication</strong> (Google) — for anonymous sign-in. See <a href="https://firebase.google.com/support/privacy" target="_blank">Firebase Privacy Policy</a>.</li>
+      <li><strong>Render</strong> — our game server host. See <a href="https://render.com/privacy" target="_blank">Render Privacy Policy</a>.</li>
+    </ul>
+
+    <h2>Data Retention</h2>
+    <p>Anonymous user accounts on Firebase's free tier may be automatically deleted after 30 days of inactivity. Gameplay event logs are retained for up to 90 days.</p>
+
+    <h2>Children's Privacy</h2>
+    <p>Algebrawl does not knowingly collect personal information from children under 13. Since we use only anonymous authentication and collect no personal data, the app is safe for all ages.</p>
+
+    <h2>Changes to This Policy</h2>
+    <p>We may update this policy from time to time. Changes will be posted on this page with an updated date.</p>
+
+    <h2>Contact</h2>
+    <p>Questions about this policy? Contact us at <a href="mailto:support@twozer00.dev">support@twozer00.dev</a>.</p>
+  </div>
+
+  <footer>
+    <span>© 2025 Algebrawl</span>
+    <div style="display:flex;gap:24px;">
+      <a href="index.html">Home</a>
+      <a href="support.html">Support</a>
+      <a href="mailto:support@twozer00.dev">support@twozer00.dev</a>
+    </div>
+  </footer>
+
+</body>
+</html>

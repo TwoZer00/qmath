@@ -5,22 +5,3 @@ services:
     rootDir: server
     buildCommand: npm install
     startCommand: npm start
-    envVars:
-      - key: PORT
-        value: 3000
-      - key: MIN_PLAYERS
-        value: 5
-      - key: MAX_VOTE_ROUNDS
-        value: 2
-      - key: TIME_LIMIT
-        value: 5
-      - key: LOBBY_WAIT
-        value: 15
-      - key: VOTE_WAIT
-        value: 10
-      - key: RESTART_WAIT
-        value: 5
-      - key: USE_EMULATOR
-        value: false
-      - key: FIREBASE_SERVICE_ACCOUNT
-        sync: false  # se configura manualmente en el dashboard de Render

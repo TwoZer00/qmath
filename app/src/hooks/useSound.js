@@ -1,4 +1,5 @@
 import { useAudioPlayer } from 'expo-audio';
+import { useRef, useEffect } from 'react';
 
 const sfx = {
   key:        require('../../assets/sfx_key.wav'),
@@ -12,7 +13,7 @@ const sfx = {
   vote:       require('../../assets/sfx_vote.wav'),
 };
 
-export function useSound() {
+export function useSound(soundEnabled = true) {
   const key        = useAudioPlayer(sfx.key);
   const correct    = useAudioPlayer(sfx.correct);
   const error      = useAudioPlayer(sfx.error);
@@ -23,7 +24,13 @@ export function useSound() {
   const join       = useAudioPlayer(sfx.join);
   const vote       = useAudioPlayer(sfx.vote);
 
-  const play = (player) => { try { player.seekTo(0); player.play(); } catch {} };
+  const enabledRef = useRef(soundEnabled);
+  useEffect(() => { enabledRef.current = soundEnabled; }, [soundEnabled]);
+
+  const play = (player) => {
+    if (!enabledRef.current) return;
+    try { player.seekTo(0); player.play(); } catch {}
+  };
 
   return {
     playKey:        () => play(key),

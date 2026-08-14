@@ -37,8 +37,12 @@ const broadcastAll = () => {
 
 const snapshot = (revealAnswer = false) => ({
   status: state.status,
+  timeLimit: TIME_LIMIT,
   players: Object.fromEntries(
-    Object.entries(state.players).map(([id, p]) => [id, { ...p }])
+    Object.entries(state.players).map(([id, p]) => {
+      const { joinedMidRound, ...pub } = p;
+      return [id, pub];
+    })
   ),
   question: state.question ? {
     expression: state.question.expression,
@@ -86,15 +90,25 @@ const startLobbyTimer = () => {
 
 const playerJoined = (uid, name) => {
   if (Object.keys(state.players).length >= MAX_PLAYERS) return;
-  // Reconnect: player already exists, just broadcast current state
-  if (state.players[uid]) { broadcastAll(); return; }
+  // Reconnect: player already exists, update status if game returned to lobby
+  if (state.players[uid]) {
+    if (state.status === 'LOBBY' && state.players[uid].status !== 'lobby') {
+      state.players[uid].status = 'lobby';
+      state.players[uid].answered = false;
+      delete state.players[uid].eliminatedAt;
+    }
+    broadcastAll();
+    return;
+  }
   const takenNames = Object.entries(state.players).filter(([id]) => id !== uid).map(([, p]) => p.name);
   let uniqueName = name;
   let i = 2;
   while (takenNames.includes(uniqueName)) { uniqueName = `${name}${i++}`; }
-  const inGame = ['PLAYING', 'ROUND_OVER', 'GAME_OVER'].includes(state.status);
+  const inGame = ['PLAYING', 'ROUND_OVER', 'GAME_OVER', 'STARTING', 'TIMEOUT'].includes(state.status);
+  // Players joining during ROUND_OVER wait until next full game, not next round
   const status = inGame ? 'waiting' : 'lobby';
-  state.players[uid] = { name: uniqueName, status, joinedAt: Date.now(), answered: false };
+  const joinedMidRound = state.status === 'ROUND_OVER';
+  state.players[uid] = { name: uniqueName, status, joinedAt: Date.now(), answered: false, joinedMidRound };
   if (state.status === 'LOBBY' && lobbyPlayers().length >= MIN_PLAYERS && !state.timer) {
     log.game(`${lobbyPlayers().length} players in lobby, starting countdown (${LOBBY_WAIT}s)`);
     startLobbyTimer();
@@ -112,8 +126,35 @@ const playerLeft = (uid) => {
   if (state.status === 'LOBBY' && lobbyPlayers().length < MIN_PLAYERS) clearTimer();
   if (Object.keys(state.players).length === 0) { resetLobby(); return; }
   broadcastAll();
-  if (state.status === 'VOTING') resolveVote(false);
-  else if (state.status === 'PLAYING' && wasActive) checkGameProgress();
+  if (state.status === 'VOTING') {
+    if (lobbyPlayers().length < MIN_PLAYERS) {
+      // No hay suficientes jugadores para jugar
+      clearTimer();
+      state.status = 'LOBBY';
+      state.voteRound = 0;
+      state.votes = {};
+      broadcastAll();
+    } else {
+      resolveVote(false);
+    }
+  } else if (state.status === 'STARTING') {
+    const active = activePlayers();
+    if (active.length < 2) {
+      clearTimer();
+      resetLobby();
+    }
+  } else if ((state.status === 'PLAYING' || state.status === 'TIMEOUT') && wasActive) {
+    checkGameProgress();
+  } else if (state.status === 'ROUND_OVER') {
+    const active = activePlayers();
+    // If 1 active player remains they win, regardless of waiting players
+    // If 0 active players remain, reset to lobby (waiting players will join next game)
+    if (active.length <= 1) {
+      clearTimer();
+      if (active.length === 1) endGame(active[0][0], active[0][1].name);
+      else resetLobby();
+    }
+  }
 };
 
 // ── Voting ───────────────────────────────────────────────────────────────────
@@ -171,20 +212,23 @@ const resolveVote = (forced) => {
 
 const startGame = () => {
   clearTimer();
-  state.status = 'PLAYING';
+  state.status = 'STARTING';
   state.winner = null;
   state.votes = {};
   state.round = 0;
   state.sessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   Object.entries(state.players).forEach(([, p]) => {
-    if (p.status === 'lobby') {
-      p.status = 'active';
-      p.answered = false;
-    } else if (p.status === 'waiting') {
-      // Keep waiting players out of this game, they join next round
-      p.answered = false;
-    }
+    if (p.status === 'lobby') { p.status = 'active'; p.answered = false; }
+    else if (p.status === 'waiting') { p.status = 'active'; p.answered = false; delete p.joinedMidRound; }
   });
+  log.game(`Game starting — active players: ${activePlayers().length}`);
+  setTimer(3000, () => beginPlaying());
+  broadcastAll();
+};
+
+const beginPlaying = () => {
+  clearTimer();
+  state.status = 'PLAYING';
   log.game(`Game started — active players: ${activePlayers().length}`);
   nextQuestion();
 };
@@ -194,22 +238,27 @@ const nextQuestion = () => {
   state.status = 'PLAYING';
   state.round += 1;
   Object.entries(state.players).forEach(([, p]) => {
-    if (p.status === 'waiting') { p.status = 'active'; p.answered = false; }
+    if (p.status === 'waiting' && !p.joinedMidRound) { p.status = 'active'; p.answered = false; }
     else if (p.status === 'active') p.answered = false;
   });
   state.question = { ...generateQuestion(state.round), startedAt: Date.now() };
   log.game(`Round ${state.round} — Question: ${state.question.expression} = ${state.question.answer} — active: ${activePlayers().length}`);
   broadcastAll();
-  setTimer(TIME_LIMIT * 1000, () => eliminateUnanswered());
+  setTimer(TIME_LIMIT * 1000, () => {
+    state.status = 'TIMEOUT';
+    broadcastAll();
+    setTimeout(() => { eliminateUnanswered(); }, 800);
+  });
 };
 
 const eliminateUnanswered = () => {
-  const eliminated = [];
+  const eliminatedUids = [];
   Object.entries(state.players).forEach(([uid, p]) => {
     if (p.status === 'active' && !p.answered) {
       p.status = 'eliminated';
       p.answered = true;
-      eliminated.push(uid);
+      p.eliminatedAt = Date.now();
+      eliminatedUids.push(uid);
       onEvent({
         type: 'answer',
         uid,
@@ -223,19 +272,20 @@ const eliminateUnanswered = () => {
       });
     }
   });
-  if (eliminated.length) log.game(`Timeout — eliminated: ${eliminated.length} players`);
+  if (eliminatedUids.length) log.game(`Timeout — eliminated: ${eliminatedUids.length} players`);
   broadcastAll();
-  checkGameProgress();
+  checkGameProgress(eliminatedUids);
 };
 
 const submitAnswer = (uid, value) => {
-  if (state.status !== 'PLAYING') return;
+  if (state.status !== 'PLAYING' && state.status !== 'TIMEOUT') return;
   const player = state.players[uid];
   if (!player || player.status !== 'active' || player.answered) return;
 
   player.answered = true;
-  const correct = value === state.question.answer;
+  const correct = Math.abs(value) === Math.abs(state.question.answer);
   player.status = correct ? 'active' : 'eliminated';
+  if (!correct) player.eliminatedAt = Date.now();
   log.game(`Answer: ${player.name} → ${value} (${correct ? 'correct' : 'wrong'})`);
   onEvent({
     type: 'answer',
@@ -249,32 +299,36 @@ const submitAnswer = (uid, value) => {
     responseTimeMs: Date.now() - state.question.startedAt,
   });
   broadcastAll();
-  checkGameProgress();
+  checkGameProgress(!correct ? [uid] : []);
 };
 
-const checkGameProgress = () => {
-  if (state.status !== 'PLAYING') return;
+const checkGameProgress = (newlyEliminatedUids = []) => {
+  if (state.status !== 'PLAYING' && state.status !== 'TIMEOUT') return;
   const active = activePlayers();
-  if (active.length <= 1) {
-    endRound(active[0]?.[0] ?? null);
+  if (active.length === 0) {
+    endRound(null, true, newlyEliminatedUids);
     return;
   }
-  if (active.every(([, p]) => p.answered)) endRound(null);
+  if (active.length === 1) {
+    endRound(active[0][0], false, newlyEliminatedUids);
+    return;
+  }
+  if (active.every(([, p]) => p.answered)) endRound(null, false, newlyEliminatedUids);
 };
 
-const endRound = (winnerUid) => {
+const endRound = (winnerUid, noWinner = false, eliminatedUids = []) => {
   clearTimer();
-  const eliminated = Object.values(state.players)
-    .filter((p) => p.status === 'eliminated' && p.answered)
-    .map((p) => p.name);
+  const eliminated = eliminatedUids
+    .map((uid) => state.players[uid]?.name)
+    .filter(Boolean);
   state.eliminatedThisRound = eliminated;
   state.status = 'ROUND_OVER';
   const winnerName = winnerUid ? state.players[winnerUid]?.name ?? null : null;
   log.game(`Round over — eliminated: ${eliminated.join(', ') || 'none'}, winner: ${winnerName ?? 'TBD'}`);
   broadcastAll();
   setTimer(ROUND_WAIT * 1000, () => {
-    log.game(`Round wait done — winner: ${winnerName ?? 'none'}, calling ${winnerUid !== null ? 'endGame' : 'nextQuestion'}`);
-    if (winnerUid !== null) endGame(winnerUid, winnerName);
+    if (winnerUid) endGame(winnerUid, winnerName);
+    else if (noWinner) endGame(null, null); // todos eliminados
     else nextQuestion();
   });
 };
@@ -284,9 +338,13 @@ const endRound = (winnerUid) => {
 const endGame = (winnerUid, winnerName) => {
   clearTimer();
   state.status = 'GAME_OVER';
-  state.winner = winnerName;
-  log.game(`Game over — winner: ${winnerName}`);
-  onEvent({ type: 'game_over', uid: winnerUid, sessionId: state.sessionId, winner: true, totalRounds: state.round });
+  state.winner = winnerName ?? null;
+  log.game(`Game over — winner: ${winnerName ?? 'nobody'}`);
+  if (winnerUid) {
+    onEvent({ type: 'game_over', uid: winnerUid, sessionId: state.sessionId, winner: true, totalRounds: state.round });
+  } else {
+    onEvent({ type: 'game_reset', sessionId: state.sessionId });
+  }
   broadcastAll();
   setTimer(RESTART_WAIT * 1000, () => resetLobby());
 };
@@ -300,9 +358,13 @@ const resetLobby = () => {
   state.winner = null;
   state.eliminatedThisRound = [];
   state.round = 0;
-  Object.entries(state.players).forEach(([, p]) => { p.status = 'lobby'; p.answered = false; });
+  Object.entries(state.players).forEach(([, p]) => { p.status = 'lobby'; p.answered = false; delete p.eliminatedAt; delete p.joinedMidRound; });
   log.game(`Lobby reset — players: ${Object.keys(state.players).length}`);
   broadcastAll();
+  if (lobbyPlayers().length >= MIN_PLAYERS) {
+    log.game(`${lobbyPlayers().length} players already in lobby, starting countdown (${LOBBY_WAIT}s)`);
+    startLobbyTimer();
+  }
 };
 
 module.exports = { setBroadcast, setOnEvent, snapshot, snapshotWithAnswer: () => snapshot(true), playerJoined, playerLeft, castVote, submitAnswer };

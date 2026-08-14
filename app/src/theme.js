@@ -86,25 +86,8 @@ export const shared = StyleSheet.create({
   // Barra de progreso
   progressBar: { height: 3, backgroundColor: colors.success, borderRadius: 0 },
 
-  // Cuerpo de calculadora — compartido entre Home, GameOver, Stats
-  calcBody: {
-    width: '88%',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderBottomWidth: 6,
-    borderBottomColor: colors.keyShadow,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    alignItems: 'center',
-  },
-
   // Header de marca — compartido entre todas las pantallas
-  brandRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 14, alignItems: 'flex-end' },
-  brandModel: { fontFamily: fonts.title, fontSize: 28, color: colors.keyTextAlt, letterSpacing: 3 },
-  brandSub: { fontFamily: fonts.bodyBold, fontSize: 10, color: colors.textMuted, letterSpacing: 2 },
+  brandRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 14, alignItems: 'center' },
+  brandModel: { fontFamily: fonts.bodyBold, fontSize: 11, color: colors.textMuted, letterSpacing: 3, textTransform: 'uppercase', opacity: 0.7 },
+  brandSub: { fontFamily: fonts.bodyMedium, fontSize: 9, color: colors.textMuted, letterSpacing: 2, opacity: 0.5 },
 });

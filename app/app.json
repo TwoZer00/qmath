@@ -1,27 +1,34 @@
 {
   "expo": {
-    "name": "qmath",
+    "name": "Algebrawl",
     "slug": "qmath",
     "version": "1.0.0",
+    "description": "Multiplayer math game — solve fast or get eliminated. Last one standing wins.",
+    "privacyPolicyUrl": "https://algebrawl.twozer00.dev/privacy.html",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0f"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dev.twozer00.qmath"
+      "bundleIdentifier": "dev.twozer00.algebrawl",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "dev.twozer00.qmath",
+      "package": "dev.twozer00.algebrawl",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
