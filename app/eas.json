@@ -22,6 +22,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "leobardo.21@icloud.com",
+        "ascAppId": "6802329810",
+        "appleTeamId": "2FQX9J5U8Z"
+      }
+    }
   }
 }

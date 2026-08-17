@@ -7,9 +7,9 @@ import CalcKey from '../components/CalcKey';
 import BrandHeader from '../components/BrandHeader';
 import { fetchStats } from '../services/stats';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { t } from '../i18n';
 
-const OP_LABELS = { '+': 'SUMA', '-': 'RESTA', '*': 'MULT', '/': 'DIV' };
-const OP_ICONS  = { '+': 'plus', '-': 'minus', '*': 'close', '/': 'division' };
+const OP_ICONS = { '+': 'plus', '-': 'minus', '*': 'close', '/': 'division' };
 
 // Barra de progreso estilo LCD
 function LcdBar({ value, max, color = colors.lcdText }) {
@@ -72,7 +72,8 @@ function useBlink() {
   return anim;
 }
 
-export default function StatsScreen({ uid, navigation }) {
+export default function StatsScreen({ uid, navigation, settings }) {
+  const T = t(settings?.language);
   const [stats, setStats] = useState(undefined);
   const [on, setOn] = useState(true);
   const blinkAnim = useBlink();
@@ -121,21 +122,21 @@ export default function StatsScreen({ uid, navigation }) {
           <LcdScreen style={s.lcd}>
             {empty && on ? (
               <View style={s.emptyWrap}>
-                <Text style={s.emptyText}>SIN DATOS</Text>
-                <Text style={s.emptySub}>JUEGA TU PRIMERA{' '}PARTIDA</Text>
+                <Text style={s.emptyText}>{T.noData}</Text>
+                <Text style={s.emptySub}>{T.playFirst}</Text>
               </View>
             ) : (
               <>
-                <LcdDivider label="RESUMEN" />
+                <LcdDivider label={T.summary} />
                 <Animated.View style={loading ? { opacity: blinkAnim } : null}>
-                  <ReadoutRow icon="trophy"               label="VICTORIAS"  value={phNum(stats?.wins)} />
-                  <ReadoutRow icon="counter"              label="RESPUESTAS" value={phNum(stats?.total)} />
-                  <ReadoutRow icon="check-circle-outline" label="PRECISION" value={ph(`${stats?.accuracy}%`, '---%')} sub={(!on || loading) ? '' : `${stats.correct}/${stats.total}`} />
-                  <ReadoutRow icon="timer-outline" label="T.PROM" value={(!on || loading) ? '--.-s' : stats?.avgResponseMs != null ? `${(stats.avgResponseMs / 1000).toFixed(2)}s` : '--'} />
-                  <ReadoutRow icon="skull-outline"        label="TIMEOUTS"   value={phNum(stats?.timeouts)} />
+                  <ReadoutRow icon="trophy"               label={T.wins}      value={phNum(stats?.wins)} />
+                  <ReadoutRow icon="counter"              label={T.answers}   value={phNum(stats?.total)} />
+                  <ReadoutRow icon="check-circle-outline" label={T.accuracy}  value={ph(`${stats?.accuracy}%`, '---%')} sub={(!on || loading) ? '' : `${stats.correct}/${stats.total}`} />
+                  <ReadoutRow icon="timer-outline"        label={T.avgTime}   value={(!on || loading) ? '--.-s' : stats?.avgResponseMs != null ? `${(stats.avgResponseMs / 1000).toFixed(2)}s` : '--'} />
+                  <ReadoutRow icon="skull-outline"        label={T.timeouts}  value={phNum(stats?.timeouts)} />
                 </Animated.View>
 
-                <LcdDivider label="POR OPERACION" />
+                <LcdDivider label={T.byOperation} />
                 <Animated.View style={loading ? { opacity: blinkAnim } : null}>
                   {OPS.map((op) => {
                     const data = stats?.byOp?.[op];
@@ -145,7 +146,7 @@ export default function StatsScreen({ uid, navigation }) {
                       <View key={op} style={s.opRow}>
                         <View style={s.opLeft}>
                           <Icon name={OP_ICONS[op]} size={11} color={colors.lcdTextDim} style={r.iconMr} />
-                          <Text style={s.opLabel}>{OP_LABELS[op]}</Text>
+                          <Text style={s.opLabel}>{T.opLabels[op]}</Text>
                         </View>
                         <View style={s.opRight}>
                           <LcdBar value={pct} max={100} color={pct >= 70 ? colors.lcdText : colors.lcdTextDim} />
@@ -157,7 +158,7 @@ export default function StatsScreen({ uid, navigation }) {
                 </Animated.View>
 
                 <LcdDivider />
-                <Text style={s.footer}>{(!on || loading) ? '...' : `ULTIMAS ${stats.total} RESPUESTAS`}</Text>
+                <Text style={s.footer}>{(!on || loading) ? '...' : T.lastAnswers(stats.total)}</Text>
               </>
             )}
           </LcdScreen>

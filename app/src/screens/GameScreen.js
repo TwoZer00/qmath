@@ -9,10 +9,12 @@ import NumPad from '../components/NumPad';
 import CalcKey from '../components/CalcKey';
 import BrandHeader from '../components/BrandHeader';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { t } from '../i18n';
 
 const DEFAULT_TIME_LIMIT = parseInt(process.env.EXPO_PUBLIC_TIME_LIMIT) || 5;
 
-export default function GameScreen({ uid, gameState, connStatus, sound, navigation }) {
+export default function GameScreen({ uid, gameState, connStatus, sound, navigation, settings }) {
+  const T = t(settings?.language);
   const handleExit = useCallback(() => { leaveLobby(); navigation.replace('Home'); }, [navigation]);
   const TIME_LIMIT = gameState?.timeLimit ?? DEFAULT_TIME_LIMIT;
   const [answer, setAnswer] = useState('');
@@ -135,12 +137,12 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
   if (!question) {
     return (
       <View style={s.container}>
-      <BrandHeader sub={`RONDA ${round}`} compact
+      <BrandHeader sub={T.round(round)} compact
         left={<CalcKey icon="arrow-left" variant="fn" onPress={handleExit} />}
       />
         <View style={s.centerBox}>
           <LcdScreen style={s.lcdCenter}>
-            <Text style={s.lcdSub}>SIGUIENTE RONDA...</Text>
+            <Text style={s.lcdSub}>{T.nextRound}</Text>
           </LcdScreen>
         </View>
       </View>
@@ -154,10 +156,10 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
       <Animated.View style={[StyleSheet.absoluteFill, s.flash, { opacity: flashAnim }]} pointerEvents="none" />
       {disconnected && (
         <View style={s.disconnectBanner}>
-          <Text style={s.disconnectText}>⚠ Reconectando...</Text>
+          <Text style={s.disconnectText}>{T.reconnecting}</Text>
         </View>
       )}
-      <BrandHeader sub={`RONDA ${round}`} compact
+      <BrandHeader sub={T.round(round)} compact
         left={<CalcKey icon="arrow-left" variant="fn" onPress={handleExit} />}
         right={<Text style={s.timer}>{timeLeft}s</Text>}
       />
@@ -169,7 +171,7 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
               <>
                 <View style={s.iconRowMb8}>
                   <Icon name="skull" size={16} color={colors.lcdText} />
-                  <Text style={s.lcdTitle}>ELIMINADOS</Text>
+                  <Text style={s.lcdTitle}>{T.eliminated.toUpperCase()}S</Text>
                 </View>
                 {eliminatedThisRound.map((name) => (
                   <Text key={name} style={s.lcdEliminated}>{name}</Text>
@@ -178,10 +180,10 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
             ) : (
               <View style={s.iconRow}>
                 <Icon name="check-all" size={16} color={colors.lcdText} />
-                <Text style={s.lcdTitle}>TODOS RESPONDIERON</Text>
+                <Text style={s.lcdTitle}>{T.allAnswered}</Text>
               </View>
             )}
-            <Text style={s.lcdSub}>{activePlayers.length} JUGADORES SIGUEN</Text>
+            <Text style={s.lcdSub}>{T.playersLeft(activePlayers.length)}</Text>
             {question?.revealAnswer && <Text style={s.lcdAnswer}>{question.expression} = {question.display}</Text>}
           </LcdScreen>
         </View>
@@ -190,10 +192,10 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
           <LcdScreen style={s.lcdCenter}>
             <View style={s.iconRowMb4}>
               <Icon name="skull-outline" size={18} color={colors.lcdText} />
-              <Text style={s.lcdEliminated}>ELIMINADO</Text>
+              <Text style={s.lcdEliminated}>{T.eliminated}</Text>
             </View>
             {question.revealAnswer && <Text style={s.lcdAnswer}>{question.expression} = {question.display}</Text>}
-            <Text style={s.lcdSub}>MIRANDO PARTIDA...</Text>
+            <Text style={s.lcdSub}>{T.watching}</Text>
             <Text style={s.lcdQuestion}>{question.expression} = ?</Text>
           </LcdScreen>
         </View>
@@ -202,10 +204,10 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
           <LcdScreen style={s.lcdCenter}>
             <View style={s.iconRowMb4}>
               <Icon name="check-circle-outline" size={18} color={colors.lcdText} />
-              <Text style={s.lcdCorrect}>OK</Text>
+              <Text style={s.lcdCorrect}>{T.ok}</Text>
             </View>
             {question.revealAnswer && <Text style={s.lcdAnswer}>{question.expression} = {question.display}</Text>}
-            <Text style={s.lcdSub}>ESPERANDO...</Text>
+            <Text style={s.lcdSub}>{T.waiting}</Text>
           </LcdScreen>
         </View>
       ) : (

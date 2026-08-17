@@ -9,7 +9,7 @@ export default function BrandHeader({ sub, left, right, compact }) {
         {left}
       </View>
       <View style={s.center}>
-        {!compact && <Text style={shared.brandModel}>fx-ALGEBRAWL</Text>}
+        {!compact && <Text style={shared.brandModel}>fx-MATHPEX</Text>}
         {sub && <Text style={compact ? s.compactTitle : shared.brandSub}>{sub}</Text>}
       </View>
       <View style={s.rightSlot}>

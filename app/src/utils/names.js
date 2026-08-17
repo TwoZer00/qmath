@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const adjectives = ['Tigre', 'Rayo', 'Cobra', 'Lobo', 'Aguila', 'Toro', 'Leon', 'Zorro'];
+const adjectives = ['Tiger', 'Bolt', 'Cobra', 'Wolf', 'Eagle', 'Bull', 'Lion', 'Fox'];
 
 export const nameFromUid = (uid) => {
   if (!uid) return 'Jugador';

@@ -12,6 +12,7 @@ import { genQuestion } from '../utils/questions';
 import { useCountdown } from '../hooks/useCountdown';
 import LcdProgressBar from '../components/LcdProgressBar';
 import LcdDivider from '../components/LcdDivider';
+import { t } from '../i18n';
 
 const PRACTICE_TIME = 5;
 
@@ -129,7 +130,8 @@ const p = StyleSheet.create({
   wrong: { color: colors.lcdTextDim, opacity: 0.5 },
 });
 
-export default function LobbyScreen({ uid, gameState, connStatus, sound, navigation }) {
+export default function LobbyScreen({ uid, gameState, connStatus, sound, navigation, settings }) {
+  const T = t(settings?.language);
   const [myVote, setMyVote] = useState(null);
   const { countdown } = useCountdown(gameState?.timerEndsAt);
 
@@ -196,12 +198,12 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
       const isWaking = connStatus === 'waking';
       const isError = connStatus === 'error';
       return {
-        status: isError ? 'ERROR DE AUTH' : isWaking ? 'DESPERTANDO...' : 'CONECTANDO...',
-        sub: isError ? 'REINICIA LA APP' : isWaking ? 'SERVIDOR INACTIVO' : 'BUSCANDO SERVIDOR',
+        status: isError ? T.authError : isWaking ? T.wakingUp : T.connecting_,
+        sub: isError ? T.restartApp : isWaking ? T.inactiveServer : T.lookingForServer,
         players: [],
       };
     }
-    if (!gameState) return { status: 'CONECTANDO...', sub: '', players: [] };
+    if (!gameState) return { status: T.connecting_, sub: '', players: [] };
 
     const { status, players = {}, votes = {} } = gameState;
     const lobbyPs = Object.entries(players).filter(([, p]) => p.status === 'lobby');
@@ -211,8 +213,8 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
 
     if (status === 'PLAYING' || players[uid]?.status === 'waiting') {
       return {
-        status: 'PARTIDA EN CURSO',
-        sub: `${activePs.length} JUGADORES ACTIVOS`,
+        status: T.gameInProgress,
+        sub: T.activePlayers(activePs.length),
         players: [
           ...activePs.map(([id, p]) => ({ id, name: p.name, tag: 'ACT' })),
           ...waitingPs.map(([id, p]) => ({ id, name: p.name, tag: 'ESP' })),
@@ -226,8 +228,8 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
     const voteInfo = status === 'VOTING' ? `  [${startCount}v ${waitCount}x]` : '';
 
     return {
-      status: lobbyPs.length >= MIN_PLAYERS ? `LISTO${voteInfo}` : `ESPERANDO JUGADORES`,
-      sub: `${lobbyPs.length}/${MIN_PLAYERS} CONECTADOS`,
+      status: lobbyPs.length >= MIN_PLAYERS ? `${T.ready}${voteInfo}` : T.waitingPlayers,
+      sub: T.connected(lobbyPs.length, MIN_PLAYERS),
       players: [
         ...lobbyPs.map(([id, p]) => ({ id, name: p.name, tag: id === uid ? ' <' : '' })),
         ...Array.from({ length: Math.max(0, MIN_PLAYERS - lobbyPs.length) }).map((_, i) => ({
@@ -244,10 +246,10 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
 
   return (
     <View style={s.container}>
-      <BrandHeader sub="SALA DE ESPERA" compact
+      <BrandHeader sub={T.waitingRoom} compact
         left={<CalcKey icon="arrow-left" variant="fn" onPress={handleGoBack} style={s.backKey} />}
       />
-      <Text style={s.lobbyHint}>PRACTICA MIENTRAS ESPERAS</Text>
+      <Text style={s.lobbyHint}>{T.practiceWhileWaiting}</Text>
 
         <LcdScreen style={s.lcd}>
           <View style={s.lcdHeader}>
@@ -279,26 +281,26 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
 
       {status === 'STARTING' && (
         <Animated.View style={s.startingOverlay}>
-          <Text style={s.startingLabel}>COMIENZA EN</Text>
+          <Text style={s.startingLabel}>{T.startingIn}</Text>
           <Text style={s.startingCountdown}>{countdown ?? 3}</Text>
-          <Text style={s.startingSub}>PREPÁRATE</Text>
+          <Text style={s.startingSub}>{T.getReady}</Text>
         </Animated.View>
       )}
 
       {showVote && (
         <View style={s.toast}>
-          <Text style={s.voteTitle}>¿INICIAR CON {lobbyPlayers.length}?</Text>
-          <Text style={s.voteSub}>SI NO VOTAS EL JUEGO INICIA SOLO</Text>
+          <Text style={s.voteTitle}>{T.startWith(lobbyPlayers.length)}</Text>
+          <Text style={s.voteSub}>{T.voteWarning}</Text>
           {!hasVoted ? (
             <View style={s.voteButtons}>
-              <CalcKey icon="play" label="INICIAR" variant="action" onPress={handleVoteStart} />
-              <CalcKey icon="hand-back-right" label="ESPERAR" variant="secondary" onPress={handleVoteWait} />
+              <CalcKey icon="play" label={T.start} variant="action" onPress={handleVoteStart} />
+              <CalcKey icon="hand-back-right" label={T.wait} variant="secondary" onPress={handleVoteWait} />
             </View>
           ) : (
             <View style={s.votedRow}>
               <Icon name={(myVote || votes[uid]) === 'start' ? 'play' : 'hand-back-right'} size={13} color={colors.lcdText} />
               <Text style={s.voted}>
-                {(myVote || votes[uid]) === 'start' ? 'INICIAR' : 'ESPERAR'}
+                {(myVote || votes[uid]) === 'start' ? T.start : T.wait}
               </Text>
             </View>
           )}

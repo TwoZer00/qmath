@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Algebrawl",
+    "name": "Mathpex",
     "slug": "qmath",
     "version": "1.0.0",
     "description": "Multiplayer math game — solve fast or get eliminated. Last one standing wins.",
-    "privacyPolicyUrl": "https://algebrawl.twozer00.dev/privacy.html",
+    "privacyPolicyUrl": "https://mathpex.twozer00.dev/privacy.html",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -35,7 +35,8 @@
     },
     "plugins": [
       "expo-font",
-      "expo-audio"
+      "expo-audio",
+      "expo-localization"
     ],
     "extra": {
       "eas": {

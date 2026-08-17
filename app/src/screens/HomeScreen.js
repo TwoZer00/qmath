@@ -5,8 +5,10 @@ import LcdScreen from '../components/LcdScreen';
 import BrandHeader from '../components/BrandHeader';
 import CalcKey from '../components/CalcKey';
 import { nameFromUid } from '../utils/names';
+import { t } from '../i18n';
 
 export default function HomeScreen({ navigation, settings, uid }) {
+  const T = t(settings?.language);
   const bootOpacity = useRef(new Animated.Value(0)).current;
   const bootScale = useRef(new Animated.Value(0.96)).current;
   const lcdOpacity = useRef(new Animated.Value(0)).current;
@@ -34,18 +36,18 @@ export default function HomeScreen({ navigation, settings, uid }) {
 
         <Animated.View style={[s.lcdWrap, { opacity: lcdOpacity }]}>
           <LcdScreen>
-            <Text style={s.lcdTitle}>ALGEBRAWL</Text>
-            <Text style={s.lcdLabel}>{lcdReady ? 'LISTO PARA JUGAR_' : ''}</Text>
+            <Text style={s.lcdTitle}>MATHPEX</Text>
+            <Text style={s.lcdLabel}>{lcdReady ? T.readyToPlay : ''}</Text>
           </LcdScreen>
         </Animated.View>
 
         <View style={s.keys}>
-          <CalcKey label="JUGAR" icon="play" variant="action" wide onPress={() => navigation.navigate('Lobby')} />
+          <CalcKey label={T.play} icon="play" variant="action" wide onPress={() => navigation.navigate('Lobby')} />
           <CalcKey label="STATS" icon="chart-bar" variant="fn" wide onPress={() => navigation.navigate('Stats')} style={{ marginTop: 8 }} />
           <CalcKey label="SETTINGS" icon="cog-outline" variant="fn" wide onPress={() => navigation.navigate('Settings')} style={{ marginTop: 8 }} />
           {uid
-            ? <Text style={s.playerHint}>jugando como {settings?.playerName || nameFromUid(uid)}</Text>
-            : <Text style={s.playerHint}>conectando...</Text>
+            ? <Text style={s.playerHint}>{T.playingAs} {settings?.playerName || nameFromUid(uid)}</Text>
+            : <Text style={s.playerHint}>{T.connecting}</Text>
           }
         </View>
       </Animated.View>

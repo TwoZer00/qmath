@@ -7,9 +7,11 @@ import CalcKey from '../components/CalcKey';
 import BrandHeader from '../components/BrandHeader';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { nameFromUid } from '../utils/names';
+import { t, LANGUAGES } from '../i18n';
 
 export default function SettingsScreen({ navigation, settings, uid }) {
-  const { playerName, soundEnabled, saveName, toggleSound } = settings;
+  const { playerName, soundEnabled, language, saveName, toggleSound, setLang } = settings;
+  const T = t(language);
   const [draft, setDraft] = useState(playerName);
   const prevNameRef = useRef(playerName);
   useEffect(() => {
@@ -38,8 +40,8 @@ export default function SettingsScreen({ navigation, settings, uid }) {
       />
 
         <LcdScreen style={s.lcd}>
-          <LcdDivider label="JUGADOR" />
-          <Text style={s.lcdLabel}>NOMBRE</Text>
+          <LcdDivider label={T.player} />
+          <Text style={s.lcdLabel}>{T.name}</Text>
           <View style={s.inputRow}>
             <TextInput
               ref={inputRef}
@@ -64,16 +66,25 @@ export default function SettingsScreen({ navigation, settings, uid }) {
             </TouchableOpacity>
           </View>
 
-          <LcdDivider label="AUDIO" />
+          <LcdDivider label={T.audio} />
           <TouchableOpacity style={s.toggleRow} onPress={toggleSound} activeOpacity={0.7}>
             <View style={s.toggleLeft}>
               <Icon name={soundEnabled ? 'volume-high' : 'volume-off'} size={13} color={colors.lcdTextDim} />
-              <Text style={s.lcdLabel}> SONIDOS</Text>
+              <Text style={s.lcdLabel}> {T.sounds}</Text>
             </View>
             <Text style={[s.toggleValue, soundEnabled ? s.toggleOn : s.toggleOff]}>
               {soundEnabled ? 'ON ' : 'OFF'}
             </Text>
           </TouchableOpacity>
+
+          <LcdDivider label={T.language} />
+          <View style={s.langRow}>
+            {LANGUAGES.map((lang) => (
+              <TouchableOpacity key={lang} onPress={() => setLang(lang)} style={[s.langKey, language === lang && s.langKeyActive]}>
+                <Text style={[s.langKeyText, language === lang && s.langKeyTextActive]}>{lang.toUpperCase()}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </LcdScreen>
 
     </View>
@@ -93,4 +104,9 @@ const s = StyleSheet.create({
   toggleValue: { fontFamily: fonts.mono, fontSize: 14, letterSpacing: 2 },
   toggleOn: { color: colors.lcdText },
   toggleOff: { color: colors.lcdTextDim },
+  langRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
+  langKey: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: colors.keyBg, borderWidth: 1, borderColor: colors.border, borderBottomWidth: 3, borderBottomColor: colors.keyShadow, borderRadius: 4 },
+  langKeyActive: { backgroundColor: colors.lcdBg, borderColor: colors.lcdBorder, borderBottomColor: colors.lcdBgDark },
+  langKeyText: { fontFamily: fonts.mono, fontSize: 12, color: colors.textMuted, letterSpacing: 1 },
+  langKeyTextActive: { color: colors.lcdText },
 });

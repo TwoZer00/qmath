@@ -104,7 +104,7 @@ export default function App() {
           {(props) => <GameOverScreen {...props} {...screenProps} />}
         </Stack.Screen>
         <Stack.Screen name="Stats">
-          {(props) => <StatsScreen {...props} uid={user?.uid} />}
+          {(props) => <StatsScreen {...props} uid={user?.uid} settings={settings} />}
         </Stack.Screen>
         <Stack.Screen name="Settings">
           {(props) => <SettingsScreen {...props} settings={settings} uid={localUid} />}

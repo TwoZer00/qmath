@@ -7,8 +7,10 @@ import { leaveLobby } from '../services/game';
 import { useCountdown } from '../hooks/useCountdown';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import CalcKey from '../components/CalcKey';
+import { t } from '../i18n';
 
-export default function GameOverScreen({ uid, gameState, navigation }) {
+export default function GameOverScreen({ uid, gameState, navigation, settings }) {
+  const T = t(settings?.language);
   const winner = gameState?.winner;
   const players = gameState?.players || {};
   const { countdown } = useCountdown(gameState?.timerEndsAt);
@@ -37,7 +39,7 @@ export default function GameOverScreen({ uid, gameState, navigation }) {
 
   return (
     <View style={s.container}>
-      <BrandHeader sub="GAME OVER" compact
+      <BrandHeader sub={T.gameOver} compact
         left={<CalcKey icon="arrow-left" variant="fn" onPress={useCallback(() => { leaveLobby(); navigation.replace('Home'); }, [navigation])} />}
       />
 
@@ -50,14 +52,14 @@ export default function GameOverScreen({ uid, gameState, navigation }) {
             />
             <View>
               <Text style={s.lcdResultText}>
-                {noWinner ? 'NADIE GANO' : isWinner ? 'GANASTE!' : 'ELIMINADO'}
+                {noWinner ? T.nobodyWon : isWinner ? T.youWon : T.youLost}
               </Text>
               {!noWinner && !isWinner && (
-                <Text style={s.lcdWinner}>GANO: {winner}</Text>
+                <Text style={s.lcdWinner}>{T.winner(winner)}</Text>
               )}
             </View>
           </View>
-          <Text style={s.tableHeader}>-- CLASIFICACION --</Text>
+          <Text style={s.tableHeader}>{T.ranking}</Text>
           <ScrollView style={s.tableScroll} showsVerticalScrollIndicator={false}>
             {sorted.map(([id, p], i) => (
               <View key={id} style={s.tableRow}>
@@ -74,7 +76,7 @@ export default function GameOverScreen({ uid, gameState, navigation }) {
         </LcdScreen>
 
         {countdown !== null && (
-          <Text style={s.countdown}>NUEVA PARTIDA EN {countdown}s</Text>
+          <Text style={s.countdown}>{T.newGameIn(countdown)}</Text>
         )}
     </View>
   );
