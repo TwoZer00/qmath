@@ -29,23 +29,56 @@ if (useEmulator) {
 
 const db = admin.firestore();
 
+// ── Stats ─────────────────────────────────────────────────────────────────────
+// Contador en memoria de UIDs únicos por partida
+let sessionPlayers = new Set();
+let statsCache = { totalPlayers: 0, lastFetch: 0 };
+const STATS_TTL = 5 * 60 * 1000; // 5 minutos
+
+// Precarga el contador al arrancar
+(async () => {
+  try {
+    const doc = await db.collection('stats').doc('global').get();
+    if (doc.exists) statsCache = { totalPlayers: doc.data().totalPlayers ?? 0, lastFetch: Date.now() };
+    log.info(`Stats loaded: ${statsCache.totalPlayers} total players`);
+  } catch (e) {
+    log.error(`Failed to load stats: ${e.message}`);
+  }
+})();
+
+const flushStats = async (uniqueCount) => {
+  if (uniqueCount === 0) return;
+  try {
+    await db.collection('stats').doc('global').set(
+      { totalPlayers: admin.firestore.FieldValue.increment(uniqueCount) },
+      { merge: true }
+    );
+    statsCache.totalPlayers += uniqueCount;
+    statsCache.lastFetch = Date.now();
+    log.info(`Stats flushed: +${uniqueCount} players (total: ${statsCache.totalPlayers})`);
+  } catch (e) {
+    log.error(`Stats flush failed: ${e.message}`);
+  }
+};
+
+
 let pendingEvents = [];
 
 setOnEvent((event) => {
+  if (event.uid) sessionPlayers.add(event.uid);
+
   if (event.type === 'game_over') {
-    // Flush all pending events + this one in a single batch
+    const uniqueCount = sessionPlayers.size;
+    sessionPlayers = new Set();
+    flushStats(uniqueCount);
     const toWrite = [...pendingEvents, event];
     pendingEvents = [];
     if (toWrite.length === 0) return;
     const batches = [];
-    for (let i = 0; i < toWrite.length; i += 500) {
-      batches.push(toWrite.slice(i, i + 500));
-    }
+    for (let i = 0; i < toWrite.length; i += 500) batches.push(toWrite.slice(i, i + 500));
     batches.forEach(async (chunk) => {
       const batch = db.batch();
-      chunk.forEach((e) => {
-        batch.set(db.collection('events').doc(), { ...e, timestamp: admin.firestore.FieldValue.serverTimestamp() });
-      });
+      chunk.forEach((e) => batch.set(db.collection('events').doc(), { ...e, timestamp: admin.firestore.FieldValue.serverTimestamp() }));
       try {
         await batch.commit();
         log.info(`Firestore batch committed: ${chunk.length} events`);
@@ -54,7 +87,7 @@ setOnEvent((event) => {
       }
     });
   } else if (event.type === 'game_reset') {
-    // No winner — flush pending events and discard, avoid accumulation
+    sessionPlayers = new Set();
     pendingEvents = [];
   } else {
     pendingEvents.push(event);
@@ -62,7 +95,25 @@ setOnEvent((event) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const server = http.createServer((req, res) => { res.writeHead(200); res.end('ok'); });
+const server = http.createServer(async (req, res) => {
+  if (req.method === 'GET' && req.url === '/stats') {
+    // Refrescar en background si el cache expiró — no bloquea el request
+    if (Date.now() - statsCache.lastFetch > STATS_TTL) {
+      statsCache.lastFetch = Date.now(); // evita múltiples refreshes simultáneos
+      db.collection('stats').doc('global').get()
+        .then(doc => { if (doc.exists) statsCache.totalPlayers = doc.data().totalPlayers ?? 0; })
+        .catch(e => log.error(`Stats refresh failed: ${e.message}`));
+    }
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=300',
+    });
+    return res.end(JSON.stringify({ totalPlayers: statsCache.totalPlayers }));
+  }
+  res.writeHead(200);
+  res.end('ok');
+});
 const wss = new WebSocketServer({ server });
 server.listen(PORT);
 const clients = new Map();
