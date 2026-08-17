@@ -4,9 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mathpex — Math Battle Royale</title>
-  <meta name="description" content="Multiplayer math game. Solve fast or get eliminated. Last one standing wins." />
+  <meta name="description" content="Real-time multiplayer math game. Solve fast or get eliminated. Last one standing wins." />
+
+  <!-- OG / Social -->
+  <meta property="og:title" content="Mathpex — Math Battle Royale" />
+  <meta property="og:description" content="Solve fast or get eliminated. Last one standing wins." />
+  <meta property="og:image" content="https://mathpex.twozer00.dev/og.png" />
+  <meta property="og:url" content="https://mathpex.twozer00.dev" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Mathpex — Math Battle Royale" />
+  <meta name="twitter:description" content="Solve fast or get eliminated. Last one standing wins." />
+  <meta name="twitter:image" content="https://mathpex.twozer00.dev/og.png" />
+
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="canonical" href="https://mathpex.twozer00.dev" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -22,6 +41,7 @@
       --text-dim: #4a5068;
       --lcd-bg: #9db89a;
       --lcd-text: #1a2e1a;
+      --lcd-dim: #4a6b4a;
       --blue: #a0c4ff;
     }
 
@@ -43,6 +63,11 @@
       align-items: center;
       padding: 20px 40px;
       border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(10, 10, 15, 0.92);
+      backdrop-filter: blur(8px);
+      z-index: 100;
     }
     .nav-logo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--blue); letter-spacing: 3px; }
     .nav-links { display: flex; gap: 24px; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
@@ -87,6 +112,72 @@
       max-width: 500px;
     }
 
+    /* LCD DEMO */
+    .lcd-demo {
+      background: var(--lcd-bg);
+      border-radius: 4px;
+      border: 2px solid #6a8f6a;
+      border-bottom: 4px solid #8aab78;
+      padding: 20px 24px;
+      width: 100%;
+      max-width: 320px;
+      min-height: 110px;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+    }
+
+    .lcd-scanlines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 5px,
+        rgba(0,0,0,0.06) 5px,
+        rgba(0,0,0,0.06) 6px
+      );
+      pointer-events: none;
+    }
+
+    .lcd-demo .lcd-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--lcd-text);
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      opacity: 0.7;
+    }
+
+    .lcd-demo .lcd-expr {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: clamp(20px, 7vw, 32px);
+      color: var(--lcd-text);
+      letter-spacing: 2px;
+    }
+
+    .lcd-demo .lcd-timer {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--lcd-dim);
+      letter-spacing: 1px;
+      margin-top: 10px;
+    }
+
+    .lcd-demo .lcd-hint {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--lcd-dim);
+      letter-spacing: 2px;
+      margin-top: 10px;
+      animation: blink 1.4s step-start infinite;
+    }
+    .lcd-demo.active .lcd-hint { display: none; }
+    .lcd-demo:hover:not([style*='default']) {
+      box-shadow: 0 0 0 2px #6a8f6a, 0 0 12px rgba(157,184,154,0.3);
+    }
+
+    /* APP STORE BADGE */
     .hero-cta {
       display: flex;
       gap: 16px;
@@ -95,35 +186,76 @@
       margin-top: 8px;
     }
 
-    .btn {
-      display: inline-block;
-      padding: 14px 32px;
+    .badge-appstore {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--text);
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 8px;
       font-family: 'Rajdhani', sans-serif;
       font-weight: 700;
-      font-size: 16px;
-      letter-spacing: 2px;
+      font-size: 15px;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
       text-decoration: none;
+      transition: opacity 0.15s;
     }
+    .badge-appstore:hover { opacity: 0.88; text-decoration: none; }
+    .badge-appstore svg { width: 22px; height: 22px; flex-shrink: 0; }
 
-    .btn-primary {
-      background: var(--accent);
-      color: var(--text);
-      border-bottom: 4px solid var(--accent-shadow);
+    /* SCREENSHOT */
+    .screenshot-section-wrap { position: relative; }
+    .screenshot-dots {
+      display: none;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 0 32px;
     }
-
-    .btn-secondary {
-      background: var(--surface2);
-      color: var(--text);
-      border-bottom: 4px solid #1a1d2a;
-      border: 1px solid var(--border);
-      border-bottom: 4px solid #1a1d2a;
+    .screenshot-dots span {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border); transition: background 0.2s; cursor: pointer;
     }
+    .screenshot-dots span.active { background: var(--text-muted); }
 
-    .btn:hover { opacity: 0.9; text-decoration: none; }
+    .screenshot-section {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 40px 40px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+    }
+    .screenshot-section::-webkit-scrollbar { display: none; }
+
+    .screenshot-wrap {
+      flex-shrink: 0;
+      width: 200px;
+      border-radius: 24px;
+      border: 2px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      transition: transform 0.2s;
+      scroll-snap-align: center;
+    }
+    .screenshot-wrap:hover { transform: translateY(-4px); }
+    .screenshot-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 22px;
+    }
+    .screenshot-wrap figcaption {
+      text-align: center;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      padding: 8px 0 4px;
+      text-transform: uppercase;
+    }
 
     /* DIVIDER */
     .divider {
@@ -132,6 +264,40 @@
       background: var(--border);
       max-width: 900px;
       margin: 0 auto;
+    }
+
+    /* STATS */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
+      padding: 60px 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 56px;
+      letter-spacing: 3px;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-num span { color: var(--accent); }
+
+    .stat-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: 6px;
     }
 
     /* HOW IT WORKS */
@@ -168,6 +334,7 @@
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 24px;
+      border-bottom: 4px solid var(--border);
     }
 
     .step-num {
@@ -192,40 +359,6 @@
       line-height: 1.5;
     }
 
-    /* LCD DEMO */
-    .lcd-demo {
-      background: var(--lcd-bg);
-      border-radius: 4px;
-      border: 2px solid #6a8f6a;
-      border-bottom: 4px solid #8aab78;
-      padding: 20px 24px;
-      max-width: 320px;
-      margin: 0 auto 40px;
-    }
-
-    .lcd-demo .lcd-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 13px;
-      color: var(--lcd-text);
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    .lcd-demo .lcd-expr {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 28px;
-      color: var(--lcd-text);
-      letter-spacing: 2px;
-    }
-
-    .lcd-demo .lcd-timer {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      color: #4a6b4a;
-      letter-spacing: 1px;
-      margin-top: 8px;
-    }
-
     /* FOOTER */
     footer {
       border-top: 1px solid var(--border);
@@ -241,13 +374,47 @@
 
     footer a { color: var(--text-dim); }
     footer a:hover { color: var(--text-muted); }
-
     .footer-links { display: flex; gap: 24px; }
+
+    .pad-key {
+      width: 56px; height: 48px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-bottom: 4px solid #1a1d2a;
+      border-radius: 6px; color: var(--text);
+      font-family: 'Share Tech Mono', monospace; font-size: 18px;
+      cursor: pointer; transition: filter 0.1s;
+    }
+    .pad-key:active { filter: brightness(1.3); transform: translateY(2px); }
+    .pad-ok  { background: var(--accent); border-color: var(--accent); border-bottom-color: var(--accent-shadow); }
+    .pad-del { background: var(--surface); }
+    .pad-cancel {
+      font-family: 'Share Tech Mono', monospace; font-size: 11px;
+      letter-spacing: 2px; color: var(--text-muted);
+      background: none; border: 1px solid var(--border);
+      border-radius: 4px; padding: 6px 20px; cursor: pointer;
+    }
+    .pad-cancel:hover { color: var(--text); }
+
+    .stat-loading { opacity: 0.3; animation: blink 1.2s step-start infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
     @media (max-width: 600px) {
       nav { padding: 16px 20px; }
-      .nav-links { gap: 16px; font-size: 12px; }
+      .nav-links { gap: 12px; font-size: 11px; }
+      .screenshot-section { padding: 40px 20px; justify-content: flex-start; }
+      .screenshot-wrap { width: 72vw; }
+      .screenshot-dots { display: flex; }
+      .stats { gap: 24px; padding: 40px 20px; }
+      .stat-num { font-size: 40px; }
       footer { padding: 24px 20px; flex-direction: column; align-items: flex-start; }
+      .footer-links { flex-wrap: wrap; gap: 12px; }
+    }
+
+    @media (max-width: 380px) {
+      .nav-links { gap: 8px; font-size: 10px; }
+      .nav-logo { font-size: 22px; }
+      .lcd-demo { padding: 14px 16px; }
     }
   </style>
 </head>
@@ -267,17 +434,73 @@
     <h1>MATH<span>PEX</span></h1>
     <p class="hero-sub">Solve fast or get eliminated.<br/>Last one standing wins.</p>
 
-    <div class="lcd-demo">
-      <div class="lcd-label">ROUND 3 — 6 PLAYERS LEFT</div>
-      <div class="lcd-expr">47 + 38 = ?</div>
-      <div class="lcd-timer">▶ 4.2s remaining</div>
+    <div class="lcd-demo" id="lcd-demo" style="cursor:pointer" title="Tap to play" aria-label="Interactive math demo — tap to play">
+      <div class="lcd-scanlines"></div>
+      <div class="lcd-label" id="demo-label">ROUND 1 — 8 PLAYERS LEFT</div>
+      <div class="lcd-expr" id="demo-expr">_ _ _</div>
+      <div class="lcd-timer" id="demo-timer">▶ 5.0s remaining</div>
+      <div class="lcd-hint" id="demo-hint">▶ TAP TO PLAY</div>
+    </div>
+    <div id="demo-pad" style="display:none; flex-direction:column; align-items:center; gap:8px; margin-top:4px; animation:fadeIn 0.15s ease;">
+      <div style="display:grid; grid-template-columns:repeat(3,56px); gap:6px;">
+        <button class="pad-key" data-k="7">7</button><button class="pad-key" data-k="8">8</button><button class="pad-key" data-k="9">9</button>
+        <button class="pad-key" data-k="4">4</button><button class="pad-key" data-k="5">5</button><button class="pad-key" data-k="6">6</button>
+        <button class="pad-key" data-k="1">1</button><button class="pad-key" data-k="2">2</button><button class="pad-key" data-k="3">3</button>
+        <button class="pad-key pad-del" data-k="DEL">⌫</button><button class="pad-key" data-k="0">0</button><button class="pad-key pad-ok" data-k="OK">OK</button>
+      </div>
+      <button class="pad-cancel" id="demo-cancel">CANCEL</button>
     </div>
 
     <div class="hero-cta">
-      <a class="btn btn-primary" href="#">Download on App Store</a>
-      <a class="btn btn-secondary" href="#">Get it on Google Play</a>
+      <a class="badge-appstore" href="https://apps.apple.com/app/id6802329810" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        Download on App Store
+      </a>
     </div>
   </section>
+
+  <!-- Screenshots -->
+  <div class="screenshot-section-wrap">
+  <div class="screenshot-section" id="screenshot-section" role="region" aria-label="App screenshots">
+    <figure class="screenshot-wrap"><img src="screenshots/Home.png" alt="Home screen" loading="lazy" /><figcaption>Home</figcaption></figure>
+    <figure class="screenshot-wrap"><img src="screenshots/game.png" alt="Game screen" loading="lazy" /><figcaption>Game</figcaption></figure>
+    <figure class="screenshot-wrap"><img src="screenshots/game answered.png" alt="Answer feedback" loading="lazy" /><figcaption>Answered</figcaption></figure>
+    <figure class="screenshot-wrap"><img src="screenshots/Lobby.png" alt="Lobby screen" loading="lazy" /><figcaption>Lobby</figcaption></figure>
+    <figure class="screenshot-wrap"><img src="screenshots/gameover win.png" alt="Victory screen" loading="lazy" /><figcaption>Victory</figcaption></figure>
+  </div>
+  <div class="screenshot-dots" id="screenshot-dots">
+    <span class="active"></span><span></span><span></span><span></span><span></span>
+  </div>
+  </div>
+
+  <div style="text-align:center; padding: 0 20px 48px;">
+    <a class="badge-appstore" href="https://apps.apple.com/app/id6802329810" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+      Download on App Store
+    </a>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num" id="stat-players"><span class="stat-loading">...</span></div>
+      <div class="stat-label">Players</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">5<span>s</span></div>
+      <div class="stat-label">To Answer</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">0<span>$</span></div>
+      <div class="stat-label">Free to Play</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Rounds</div>
+    </div>
+  </div>
 
   <div class="divider"></div>
 
@@ -309,7 +532,7 @@
   </section>
 
   <footer>
-    <span>© 2025 Mathpex</span>
+    <span>&copy; <span id="footer-year">2025</span> Mathpex</span>
     <div class="footer-links">
       <a href="privacy.html">Privacy Policy</a>
       <a href="support.html">Support</a>
@@ -317,5 +540,170 @@
     </div>
   </footer>
 
+  <script>
+    document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+    const DEMOS = [
+      { expr: '47 + 38', answer: '85', round: 1, players: 8 },
+      { expr: '9 × 7',   answer: '63', round: 2, players: 6 },
+      { expr: '72 ÷ 8',  answer: '9',  round: 3, players: 5 },
+      { expr: '15 − 8',  answer: '7',  round: 4, players: 3 },
+      { expr: '6 × 6',   answer: '36', round: 5, players: 2 },
+    ];
+    let di = 0, interactive = false, userInput = '', resolved = false;
+    let tickInterval = null, typeTimeout = null, nextTimeout = null;
+
+    const elLabel  = document.getElementById('demo-label');
+    const elExpr   = document.getElementById('demo-expr');
+    const elTimer  = document.getElementById('demo-timer');
+    const elHint   = document.getElementById('demo-hint');
+    const elPad    = document.getElementById('demo-pad');
+    const elLcd    = document.getElementById('lcd-demo');
+
+    function clearTimers() {
+      clearInterval(tickInterval);
+      clearTimeout(typeTimeout);
+      clearTimeout(nextTimeout);
+    }
+
+    function showResult(ok) {
+      resolved = true;
+      elTimer.textContent = ok ? '✓ correct!' : '✗ wrong';
+      elTimer.style.color = ok ? '#27ae60' : '#c0392b';
+      elExpr.style.color  = ok ? '#1a2e1a' : '#c0392b';
+      nextTimeout = setTimeout(() => {
+        elTimer.style.color = '';
+        elExpr.style.color  = '';
+        if (ok) { di = (di + 1) % DEMOS.length; }
+        if (interactive) { startInteractive(); } else { runDemo(); }
+      }, 900);
+    }
+
+    function startInteractive() {
+      clearTimers();
+      interactive = true; userInput = ''; resolved = false;
+      elLcd.style.cursor = 'default';
+      elPad.style.display = 'flex';
+      elHint.style.display = 'none';
+      const d = DEMOS[di];
+      elLabel.textContent = `ROUND ${d.round} — ${d.players} PLAYERS LEFT`;
+      elExpr.textContent  = d.expr + ' = ?';
+      let t = 5.0;
+      elTimer.textContent = `▶ ${t.toFixed(1)}s remaining`;
+      tickInterval = setInterval(() => {
+        t = Math.max(0, +(t - 0.1).toFixed(1));
+        elTimer.textContent = `▶ ${t.toFixed(1)}s remaining`;
+        if (t <= 0) { clearInterval(tickInterval); if (!resolved) showResult(false); }
+      }, 100);
+    }
+
+    function deactivate() {
+      clearTimers();
+      interactive = false;
+      elPad.style.display = 'none';
+      elLcd.style.cursor = 'pointer';
+      elHint.style.display = '';
+      elTimer.style.color = '';
+      elExpr.style.color  = '';
+      runDemo();
+    }
+
+    function handleKey(k) {
+      if (resolved) return;
+      if (k === 'DEL') { userInput = userInput.slice(0, -1); }
+      else if (k === 'OK') { submit(); return; }
+      else if (userInput.length < 4) { userInput += k; }
+      const d = DEMOS[di];
+      elExpr.textContent = d.expr + ' = ' + (userInput || '?');
+      // auto-submit
+      if (userInput && userInput === d.answer) { clearInterval(tickInterval); showResult(true); }
+    }
+
+    function submit() {
+      if (resolved || !userInput) return;
+      clearInterval(tickInterval);
+      showResult(userInput === DEMOS[di].answer);
+    }
+
+    // pad buttons
+    document.querySelectorAll('.pad-key').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); handleKey(btn.dataset.k); });
+    });
+    document.getElementById('demo-cancel').addEventListener('click', (e) => { e.stopPropagation(); deactivate(); });
+    elLcd.addEventListener('click', () => { if (!interactive) startInteractive(); });
+
+    // keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (!interactive) return;
+      if (e.key >= '0' && e.key <= '9') handleKey(e.key);
+      else if (e.key === 'Backspace') handleKey('DEL');
+      else if (e.key === 'Enter') handleKey('OK');
+      else if (e.key === 'Escape') deactivate();
+    });
+
+    function runDemo() {
+      clearTimers();
+      const d = DEMOS[di % DEMOS.length];
+      elLabel.textContent = `ROUND ${d.round} — ${d.players} PLAYERS LEFT`;
+      elExpr.textContent  = d.expr + ' = ?';
+      let t = 5.0;
+      elTimer.textContent = `▶ ${t.toFixed(1)}s remaining`;
+      tickInterval = setInterval(() => {
+        t = Math.max(0, +(t - 0.1).toFixed(1));
+        elTimer.textContent = `▶ ${t.toFixed(1)}s remaining`;
+      }, 100);
+      typeTimeout = setTimeout(() => {
+        clearInterval(tickInterval);
+        const ans = d.answer;
+        let i = 0;
+        elTimer.textContent = '✓ answered';
+        const type = setInterval(() => {
+          i++;
+          elExpr.textContent = d.expr + ' = ' + ans.slice(0, i);
+          if (i >= ans.length) {
+            clearInterval(type);
+            nextTimeout = setTimeout(() => { di = (di + 1) % DEMOS.length; runDemo(); }, 1200);
+          }
+        }, 300);
+      }, 1800);
+    }
+    runDemo();
+
+    // screenshot dots
+    const scroller = document.getElementById('screenshot-section');
+    const dots = document.querySelectorAll('#screenshot-dots span');
+    if (scroller && dots.length) {
+      scroller.addEventListener('scroll', () => {
+        const items = scroller.querySelectorAll('.screenshot-wrap');
+        let closest = 0, minDist = Infinity;
+        items.forEach((el, i) => {
+          const dist = Math.abs(el.getBoundingClientRect().left - scroller.getBoundingClientRect().left);
+          if (dist < minDist) { minDist = dist; closest = i; }
+        });
+        dots.forEach((d, i) => d.classList.toggle('active', i === closest));
+      }, { passive: true });
+      dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+          const items = scroller.querySelectorAll('.screenshot-wrap');
+          items[i]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+        });
+      });
+    }
+
+    fetch('https://qmath.onrender.com/stats')
+      .then(r => r.json())
+      .then(({ totalPlayers }) => {
+        const el = document.getElementById('stat-players');
+        const wrap = el?.closest('.stat');
+        if (totalPlayers >= 100) {
+          el.textContent = totalPlayers.toLocaleString();
+        } else {
+          wrap?.remove();
+        }
+      })
+      .catch(() => {
+        document.getElementById('stat-players')?.closest('.stat')?.remove();
+      });
+  </script>
 </body>
 </html>
