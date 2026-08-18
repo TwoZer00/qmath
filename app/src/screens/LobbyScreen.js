@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { leaveLobby, joinLobby, sendVote, MIN_PLAYERS, MAX_VOTE_ROUNDS } from '../services/game';
+import { leaveLobby, joinLobby, sendVote } from '../services/game';
 import { colors, fonts } from '../theme';
 import NumPad from '../components/NumPad';
 import LcdScreen from '../components/LcdScreen';
@@ -228,11 +228,11 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
     const voteInfo = status === 'VOTING' ? `  [${startCount}v ${waitCount}x]` : '';
 
     return {
-      status: lobbyPs.length >= MIN_PLAYERS ? `${T.ready}${voteInfo}` : T.waitingPlayers,
-      sub: T.connected(lobbyPs.length, MIN_PLAYERS),
+      status: lobbyPs.length >= minPlayers ? `${T.ready}${voteInfo}` : T.waitingPlayers,
+      sub: T.connected(lobbyPs.length, minPlayers),
       players: [
         ...lobbyPs.map(([id, p]) => ({ id, name: p.name, tag: id === uid ? ' <' : '' })),
-        ...Array.from({ length: Math.max(0, MIN_PLAYERS - lobbyPs.length) }).map((_, i) => ({
+        ...Array.from({ length: Math.max(0, minPlayers - lobbyPs.length) }).map((_, i) => ({
           id: `empty-${i}`, name: '???', tag: '', empty: true,
         })),
       ],
@@ -242,7 +242,8 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
   const lcd = getLcdContent();
   const { status, votes = {} } = gameState || {};
   const hasVoted = myVote || (status === 'VOTING' && !!votes[uid]);
-  const showVote = ready && gameState && (status === 'VOTING' || (status === 'LOBBY' && lobbyPlayers.length >= MIN_PLAYERS));
+  const minPlayers = gameState?.minPlayers ?? 2;
+  const showVote = ready && gameState && (status === 'VOTING' || (status === 'LOBBY' && lobbyPlayers.length >= minPlayers));
 
   return (
     <View style={s.container}>

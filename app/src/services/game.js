@@ -4,9 +4,6 @@ import { nameFromUid, getSavedName } from '../utils/names';
 
 const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://192.168.0.102:3000';
 
-export const MIN_PLAYERS = parseInt(process.env.EXPO_PUBLIC_MIN_PLAYERS) || 2;
-export const MAX_VOTE_ROUNDS = parseInt(process.env.EXPO_PUBLIC_MAX_VOTE_ROUNDS) || 2;
-
 let ws = null;
 let listeners = {}; // eventType -> [callback]
 let intentionalClose = false;

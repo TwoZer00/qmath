@@ -38,6 +38,8 @@ const broadcastAll = () => {
 const snapshot = (revealAnswer = false) => ({
   status: state.status,
   timeLimit: TIME_LIMIT,
+  minPlayers: MIN_PLAYERS,
+  maxVoteRounds: MAX_VOTE_ROUNDS,
   players: Object.fromEntries(
     Object.entries(state.players).map(([id, p]) => {
       const { joinedMidRound, ...pub } = p;
