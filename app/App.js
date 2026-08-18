@@ -21,7 +21,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [fontsLoaded] = useFonts({ BebasNeue_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold, ShareTechMono_400Regular });
+  const [fontsLoaded, fontError] = useFonts({ BebasNeue_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold, ShareTechMono_400Regular });
   const [user, setUser] = useState(null);
   const [gameState, setGameState] = useState(null);
   const [connStatus, setConnStatus] = useState('connecting');
@@ -81,7 +81,7 @@ export default function App() {
     return () => disconnect();
   }, []);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: '#0a0a0f' }} />;
 
   const uid = user?.uid ?? localUid;
   const screenProps = { uid, gameState, connStatus, sound, hasPlayedOnce, settings };
