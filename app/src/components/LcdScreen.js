@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { colors } from '../theme';
 
-const SCANLINE_SPACING = 6; // px entre cada línea
+const SCANLINE_SPACING = 6;
+
+const Scanlines = memo(function Scanlines({ count }) {
+  return (
+    <View style={s.scanlines} pointerEvents="none">
+      {Array.from({ length: count }).map((_, i) => (
+        <View key={i} style={[s.line, { top: i * SCANLINE_SPACING }]} />
+      ))}
+    </View>
+  );
+});
 
 export default function LcdScreen({ children, style }) {
   const [lineCount, setLineCount] = useState(0);
@@ -13,13 +23,7 @@ export default function LcdScreen({ children, style }) {
       onLayout={(e) => setLineCount(Math.floor(e.nativeEvent.layout.height / SCANLINE_SPACING))}
     >
       {children}
-      {lineCount > 0 && (
-        <View style={s.scanlines} pointerEvents="none">
-          {Array.from({ length: lineCount }).map((_, i) => (
-            <View key={i} style={[s.line, { top: i * SCANLINE_SPACING }]} />
-          ))}
-        </View>
-      )}
+      {lineCount > 0 && <Scanlines count={lineCount} />}
     </View>
   );
 }

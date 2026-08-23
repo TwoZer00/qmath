@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
 import { LANGUAGES } from '../i18n';
@@ -30,23 +30,25 @@ export function useSettings() {
     })();
   }, []);
 
-  const saveName = async (name) => {
+  const saveName = useCallback(async (name) => {
     const trimmed = name.trim().slice(0, 20);
     if (!trimmed) return;
     setPlayerName(trimmed);
     await AsyncStorage.setItem(KEYS.name, trimmed);
-  };
+  }, []);
 
-  const toggleSound = async () => {
-    const next = !soundEnabled;
-    setSoundEnabled(next);
-    await AsyncStorage.setItem(KEYS.sound, String(next));
-  };
+  const toggleSound = useCallback(async () => {
+    setSoundEnabled((prev) => {
+      const next = !prev;
+      AsyncStorage.setItem(KEYS.sound, String(next));
+      return next;
+    });
+  }, []);
 
-  const setLang = async (lang) => {
+  const setLang = useCallback(async (lang) => {
     setLanguage(lang);
     await AsyncStorage.setItem(KEYS.lang, lang);
-  };
+  }, []);
 
   return { playerName, soundEnabled, language, loaded, saveName, toggleSound, setLang };
 }

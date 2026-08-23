@@ -25,6 +25,8 @@ export default function GameOverScreen({ uid, gameState, navigation, settings })
     }
   }, [gameState?.status]);
 
+  const handleGoHome = useCallback(() => { leaveLobby(); navigation.replace('Home'); }, [navigation]);
+
   if (!gameState) return null;
 
   const sorted = Object.entries(players).sort(([, a], [, b]) => {
@@ -40,7 +42,7 @@ export default function GameOverScreen({ uid, gameState, navigation, settings })
   return (
     <View style={s.container}>
       <BrandHeader sub={T.gameOver} compact
-        left={<CalcKey icon="arrow-left" variant="fn" onPress={useCallback(() => { leaveLobby(); navigation.replace('Home'); }, [navigation])} />}
+        left={<CalcKey icon="arrow-left" variant="fn" onPress={handleGoHome} />}
       />
 
         <LcdScreen style={s.lcd}>

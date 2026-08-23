@@ -15,7 +15,7 @@ export function useCountdown(timerEndsAt) {
       if (secs === 0) clearInterval(timerRef.current);
     };
     tick();
-    timerRef.current = setInterval(tick, 500);
+    timerRef.current = setInterval(tick, 1000);
     return () => clearInterval(timerRef.current);
   }, [timerEndsAt]);
 

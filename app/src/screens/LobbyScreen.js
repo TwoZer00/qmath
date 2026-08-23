@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { leaveLobby, joinLobby, sendVote } from '../services/game';
@@ -16,7 +16,7 @@ import { t } from '../i18n';
 
 const PRACTICE_TIME = 5;
 
-function PracticeGame({ playKey, padRef }) {
+const PracticeGame = memo(function PracticeGame({ playKey, padRef }) {
   const [question, setQuestion] = useState(genQuestion);
   const [answer, setAnswer] = useState('');
   const [result, setResult] = useState(null);
@@ -118,7 +118,7 @@ function PracticeGame({ playKey, padRef }) {
       </Animated.Text>
     </View>
   );
-}
+});
 
 const p = StyleSheet.create({
   container: { width: '100%', marginTop: 4 },
@@ -193,7 +193,7 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
 
   const ready = connStatus === 'ready';
 
-  const getLcdContent = () => {
+  const getLcdContent = useCallback(() => {
     if (!ready) {
       const isWaking = connStatus === 'waking';
       const isError = connStatus === 'error';
@@ -237,9 +237,9 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
         })),
       ],
     };
-  };
+  }, [ready, gameState, uid, connStatus, countdown, T, minPlayers]);
 
-  const lcd = getLcdContent();
+  const lcd = useMemo(() => getLcdContent(), [getLcdContent]);
   const { status, votes = {} } = gameState || {};
   const hasVoted = myVote || (status === 'VOTING' && !!votes[uid]);
   const minPlayers = gameState?.minPlayers ?? 2;

@@ -1,5 +1,5 @@
 import { useAudioPlayer } from 'expo-audio';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 
 const sfx = {
   key:        require('../../assets/sfx_key.wav'),
@@ -27,20 +27,20 @@ export function useSound(soundEnabled = true) {
   const enabledRef = useRef(soundEnabled);
   useEffect(() => { enabledRef.current = soundEnabled; }, [soundEnabled]);
 
-  const play = (player) => {
+  const play = useCallback((player) => {
     if (!enabledRef.current) return;
     try { player.seekTo(0); player.play(); } catch {}
-  };
+  }, []);
 
-  return {
-    playKey:        () => play(key),
-    playCorrect:    () => play(correct),
-    playError:      () => play(error),
-    playEliminated: () => play(eliminated),
-    playTick:       () => play(tick),
-    playRoundOver:  () => play(roundOver),
-    playVictory:    () => play(victory),
-    playJoin:       () => play(join),
-    playVote:       () => play(vote),
-  };
+  const playKey        = useCallback(() => play(key),        [play, key]);
+  const playCorrect    = useCallback(() => play(correct),    [play, correct]);
+  const playError      = useCallback(() => play(error),      [play, error]);
+  const playEliminated = useCallback(() => play(eliminated), [play, eliminated]);
+  const playTick       = useCallback(() => play(tick),       [play, tick]);
+  const playRoundOver  = useCallback(() => play(roundOver),  [play, roundOver]);
+  const playVictory    = useCallback(() => play(victory),    [play, victory]);
+  const playJoin       = useCallback(() => play(join),       [play, join]);
+  const playVote       = useCallback(() => play(vote),       [play, vote]);
+
+  return { playKey, playCorrect, playError, playEliminated, playTick, playRoundOver, playVictory, playJoin, playVote };
 }

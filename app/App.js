@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -84,31 +84,29 @@ export default function App() {
   if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: '#0a0a0f' }} />;
 
   const uid = user?.uid ?? localUid;
-  const screenProps = { uid, gameState, connStatus, sound, hasPlayedOnce, settings };
+  const screenProps = useMemo(
+    () => ({ uid, gameState, connStatus, sound, hasPlayedOnce, settings }),
+    [uid, gameState, connStatus, sound, hasPlayedOnce, settings]
+  );
+
+  const HomeScreenComp   = useCallback((props) => <HomeScreen {...props} settings={settings} uid={localUid} connStatus={connStatus} />, [settings, localUid, connStatus]);
+  const LobbyScreenComp  = useCallback((props) => <LobbyScreen {...props} {...screenProps} />, [screenProps]);
+  const GameScreenComp   = useCallback((props) => <GameScreen {...props} {...screenProps} />, [screenProps]);
+  const GameOverComp     = useCallback((props) => <GameOverScreen {...props} {...screenProps} />, [screenProps]);
+  const StatsScreenComp  = useCallback((props) => <StatsScreen {...props} uid={user?.uid} settings={settings} />, [user?.uid, settings]);
+  const SettingsComp     = useCallback((props) => <SettingsScreen {...props} settings={settings} uid={localUid} />, [settings, localUid]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
       <NavigationContainer>
         <StatusBar style="light" backgroundColor="#0a0a0f" />
         <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#1a1a2e' }, gestureEnabled: false }}>
-        <Stack.Screen name="Home">
-          {(props) => <HomeScreen {...props} settings={settings} uid={localUid} connStatus={connStatus} />}
-        </Stack.Screen>
-        <Stack.Screen name="Lobby">
-          {(props) => <LobbyScreen {...props} {...screenProps} />}
-        </Stack.Screen>
-        <Stack.Screen name="Game">
-          {(props) => <GameScreen {...props} {...screenProps} />}
-        </Stack.Screen>
-        <Stack.Screen name="GameOver">
-          {(props) => <GameOverScreen {...props} {...screenProps} />}
-        </Stack.Screen>
-        <Stack.Screen name="Stats">
-          {(props) => <StatsScreen {...props} uid={user?.uid} settings={settings} />}
-        </Stack.Screen>
-        <Stack.Screen name="Settings">
-          {(props) => <SettingsScreen {...props} settings={settings} uid={localUid} />}
-        </Stack.Screen>
+        <Stack.Screen name="Home">{HomeScreenComp}</Stack.Screen>
+        <Stack.Screen name="Lobby">{LobbyScreenComp}</Stack.Screen>
+        <Stack.Screen name="Game">{GameScreenComp}</Stack.Screen>
+        <Stack.Screen name="GameOver">{GameOverComp}</Stack.Screen>
+        <Stack.Screen name="Stats">{StatsScreenComp}</Stack.Screen>
+        <Stack.Screen name="Settings">{SettingsComp}</Stack.Screen>
       </Stack.Navigator>
       </NavigationContainer>
     </View>
