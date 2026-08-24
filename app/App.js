@@ -81,8 +81,6 @@ export default function App() {
     return () => disconnect();
   }, []);
 
-  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: '#0a0a0f' }} />;
-
   const uid = user?.uid ?? localUid;
   const screenProps = useMemo(
     () => ({ uid, gameState, connStatus, sound, hasPlayedOnce, settings }),
@@ -95,6 +93,8 @@ export default function App() {
   const GameOverComp     = useCallback((props) => <GameOverScreen {...props} {...screenProps} />, [screenProps]);
   const StatsScreenComp  = useCallback((props) => <StatsScreen {...props} uid={user?.uid} settings={settings} />, [user?.uid, settings]);
   const SettingsComp     = useCallback((props) => <SettingsScreen {...props} settings={settings} uid={localUid} />, [settings, localUid]);
+
+  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: '#0a0a0f' }} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
