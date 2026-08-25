@@ -139,6 +139,7 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
   const prevPlayerCount = useRef(null);
   const prevStatus = useRef(null);
   const lobbyPlayers = gameState ? Object.entries(gameState.players || {}).filter(([, p]) => p.status === 'lobby') : [];
+  const humanLobbyPlayers = lobbyPlayers.filter(([, p]) => !p.isBot);
 
   const joinedRef = useRef(false);
 
@@ -243,7 +244,7 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
   const { status, votes = {} } = gameState || {};
   const hasVoted = myVote || (status === 'VOTING' && !!votes[uid]);
   const minPlayers = gameState?.minPlayers ?? 2;
-  const showVote = ready && gameState && (status === 'VOTING' || (status === 'LOBBY' && lobbyPlayers.length >= minPlayers));
+  const showVote = ready && gameState && (status === 'VOTING' || (status === 'LOBBY' && lobbyPlayers.length >= minPlayers)) && humanLobbyPlayers.length >= minPlayers;
 
   return (
     <View style={s.container}>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts } from '../theme';
 import LcdScreen from '../components/LcdScreen';
 import BrandHeader from '../components/BrandHeader';
@@ -10,8 +11,10 @@ import CalcKey from '../components/CalcKey';
 import { t } from '../i18n';
 
 export default function GameOverScreen({ uid, gameState, navigation, settings }) {
+  const insets = useSafeAreaInsets();
   const T = t(settings?.language);
   const winner = gameState?.winner;
+  const winnerIsBot = gameState?.winnerIsBot ?? false;
   const players = gameState?.players || {};
   const { countdown } = useCountdown(gameState?.timerEndsAt);
 
@@ -40,7 +43,7 @@ export default function GameOverScreen({ uid, gameState, navigation, settings })
   });
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, { paddingBottom: insets.bottom + 12 }]}>
       <BrandHeader sub={T.gameOver} compact
         left={<CalcKey icon="arrow-left" variant="fn" onPress={handleGoHome} />}
       />
@@ -48,15 +51,15 @@ export default function GameOverScreen({ uid, gameState, navigation, settings })
         <LcdScreen style={s.lcd}>
           <View style={s.resultRow}>
             <Icon
-              name={noWinner ? 'skull' : isWinner ? 'trophy' : 'emoticon-dead-outline'}
+              name={noWinner ? 'skull' : winnerIsBot ? 'robot' : isWinner ? 'trophy' : 'emoticon-dead-outline'}
               size={32}
               color={colors.lcdText}
             />
             <View>
               <Text style={s.lcdResultText}>
-                {noWinner ? T.nobodyWon : isWinner ? T.youWon : T.youLost}
+                {noWinner ? T.nobodyWon : winnerIsBot ? T.botWins : isWinner ? T.youWon : T.youLost}
               </Text>
-              {!noWinner && !isWinner && (
+              {!noWinner && !isWinner && !winnerIsBot && (
                 <Text style={s.lcdWinner}>{T.winner(winner)}</Text>
               )}
             </View>
@@ -69,7 +72,7 @@ export default function GameOverScreen({ uid, gameState, navigation, settings })
                   {String(i + 1).padStart(2, '0')}
                 </Text>
                 <Text style={[s.tableName, id === uid && s.tableMe, !noWinner && i === 0 && s.tableWinner]}>
-                  {p.name}{id === uid ? ' <' : ''}
+                  {p.isBot ? '🤖 ' : ''}{p.name}{id === uid ? ' <' : ''}
                 </Text>
                 <Icon name={noWinner ? 'skull-outline' : i === 0 ? 'trophy' : 'skull-outline'} size={12} color={(!noWinner && i === 0) ? colors.lcdText : colors.lcdTextDim} />
               </View>
@@ -86,12 +89,12 @@ export default function GameOverScreen({ uid, gameState, navigation, settings })
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, paddingTop: 52 },
-  lcd: { width: '100%', marginBottom: 8 },
+  lcd: { width: '100%', marginBottom: 8, flex: 1 },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   lcdResultText: { fontFamily: fonts.mono, fontSize: 24, color: colors.lcdText, letterSpacing: 2 },
   lcdWinner: { fontFamily: fonts.mono, fontSize: 13, color: colors.lcdTextDim, letterSpacing: 1 },
   tableHeader: { fontFamily: fonts.mono, fontSize: 11, color: colors.lcdTextDim, letterSpacing: 2, textAlign: 'center', marginBottom: 8 },
-  tableScroll: { maxHeight: 160 },
+  tableScroll: { flex: 1 },
   tableRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 3 },
   tablePos: { fontFamily: fonts.mono, fontSize: 13, color: colors.lcdTextDim, width: 28 },
   tableName: { fontFamily: fonts.mono, fontSize: 13, color: colors.lcdText, flex: 1 },

@@ -1,6 +1,62 @@
 const { generateQuestion } = require('./questions');
-const { MIN_PLAYERS, MAX_PLAYERS, MAX_VOTE_ROUNDS, TIME_LIMIT, LOBBY_WAIT, VOTE_WAIT, RESTART_WAIT, ROUND_WAIT } = require('./config');
+const { MIN_PLAYERS, MAX_PLAYERS, MAX_VOTE_ROUNDS, TIME_LIMIT, LOBBY_WAIT, VOTE_WAIT, RESTART_WAIT, ROUND_WAIT, BOT_ERROR_RATE } = require('./config');
 const log = require('./logger');
+
+// ── Bots ─────────────────────────────────────────────────────────────────────
+const BOT_ADJECTIVES = ['Tiger', 'Bolt', 'Cobra', 'Wolf', 'Eagle', 'Bull', 'Lion', 'Fox', 'Bear', 'Hawk'];
+const botTimers = {};
+
+const randomBotName = () => {
+  const adj = BOT_ADJECTIVES[Math.floor(Math.random() * BOT_ADJECTIVES.length)];
+  const num = String(Math.floor(Math.random() * 90) + 10);
+  return `${adj}${num}`;
+};
+
+const addBots = () => {
+  const humanCount = Object.values(state.players).filter((p) => !p.isBot).length;
+  const needed = MIN_PLAYERS - humanCount;
+  if (needed <= 0) return;
+  const extraBots = Math.floor(Math.random() * (MAX_PLAYERS - MIN_PLAYERS)) + needed;
+  const count = Math.min(extraBots, MAX_PLAYERS - humanCount);
+  const usedNames = new Set(Object.values(state.players).map((p) => p.name));
+  for (let i = 0; i < count; i++) {
+    let name;
+    let attempts = 0;
+    do { name = randomBotName(); attempts++; } while (usedNames.has(name) && attempts < 20);
+    usedNames.add(name);
+    const uid = `bot_${name}_${Date.now()}_${i}`;
+    state.players[uid] = { name, status: 'lobby', joinedAt: Date.now(), answered: false, isBot: true };
+    log.game(`Bot joined: ${name}`);
+  }
+};
+
+const removeBots = () => {
+  Object.keys(botTimers).forEach((uid) => { clearTimeout(botTimers[uid]); delete botTimers[uid]; });
+  Object.keys(state.players).forEach((uid) => {
+    if (state.players[uid].isBot) delete state.players[uid];
+  });
+};
+
+const scheduleBotAnswer = (uid) => {
+  const delay = Math.random() * Math.max(TIME_LIMIT * 1000 - 500, 500);
+  botTimers[uid] = setTimeout(() => {
+    delete botTimers[uid];
+    const wrong = Math.random() < BOT_ERROR_RATE;
+    const answer = wrong ? state.question.answer + 1 : state.question.answer;
+    submitAnswer(uid, answer);
+  }, delay);
+};
+
+const cancelBotAnswers = () => {
+  Object.keys(botTimers).forEach((uid) => { clearTimeout(botTimers[uid]); delete botTimers[uid]; });
+};
+
+const scheduleBotAnswers = () => {
+  cancelBotAnswers();
+  Object.entries(state.players).forEach(([uid, p]) => {
+    if (p.isBot && p.status === 'active') scheduleBotAnswer(uid);
+  });
+};
 
 // Single room state
 const state = {
@@ -10,6 +66,7 @@ const state = {
   voteRound: 0,
   votes: {},
   winner: null,
+  winnerIsBot: false,
   eliminatedThisRound: [], // names eliminated in last round
   round: 0,
   timer: null,
@@ -55,6 +112,7 @@ const snapshot = (revealAnswer = false) => ({
   voteRound: state.voteRound,
   votes: state.votes,
   winner: state.winner,
+  winnerIsBot: state.winnerIsBot,
   eliminatedThisRound: state.eliminatedThisRound,
   round: state.round,
   timerEndsAt,
@@ -86,8 +144,16 @@ const activePlayers = () =>
 const startLobbyTimer = () => {
   setTimer(LOBBY_WAIT * 1000, () => {
     if (lobbyPlayers().length < MIN_PLAYERS) return;
-    openVote(1);
+    const hasBots = lobbyPlayers().some(([, p]) => p.isBot);
+    if (hasBots) startGame();
+    else openVote(1);
   });
+};
+
+const fillWithBots = () => {
+  addBots();
+  broadcastAll();
+  if (!state.timer) startLobbyTimer();
 };
 
 const playerJoined = (uid, name) => {
@@ -107,13 +173,24 @@ const playerJoined = (uid, name) => {
   let i = 2;
   while (takenNames.includes(uniqueName)) { uniqueName = `${name}${i++}`; }
   const inGame = ['PLAYING', 'ROUND_OVER', 'GAME_OVER', 'STARTING', 'TIMEOUT'].includes(state.status);
+  // Si hay una partida en curso de puros bots, resetear para que el humano juegue de inmediato
+  if (inGame && Object.values(state.players).every((p) => p.isBot)) {
+    log.game(`Human joined during bot-only game — resetting lobby for ${uniqueName}`);
+    resetLobby();
+  }
   // Players joining during ROUND_OVER wait until next full game, not next round
-  const status = inGame ? 'waiting' : 'lobby';
+  const status = state.status === 'LOBBY' ? 'lobby' : 'waiting';
   const joinedMidRound = state.status === 'ROUND_OVER';
   state.players[uid] = { name: uniqueName, status, joinedAt: Date.now(), answered: false, joinedMidRound };
-  if (state.status === 'LOBBY' && lobbyPlayers().length >= MIN_PLAYERS && !state.timer) {
-    log.game(`${lobbyPlayers().length} players in lobby, starting countdown (${LOBBY_WAIT}s)`);
-    startLobbyTimer();
+  if (state.status === 'LOBBY') {
+    if (lobbyPlayers().length >= MIN_PLAYERS && !state.timer) {
+      log.game(`${lobbyPlayers().length} players in lobby, starting countdown (${LOBBY_WAIT}s)`);
+      startLobbyTimer();
+    } else if (lobbyPlayers().filter(([ , p]) => !p.isBot).length === 1 && !state.timer) {
+      // Solo 1 humano — llenar con bots y arrancar
+      log.game('Solo 1 human in lobby, filling with bots');
+      fillWithBots();
+    }
   }
   broadcastAll();
 };
@@ -125,8 +202,9 @@ const playerLeft = (uid) => {
   delete state.players[uid];
   delete state.votes[uid];
   log.game(`Player left: ${name} — lobby: ${lobbyPlayers().length}`);
-  if (state.status === 'LOBBY' && lobbyPlayers().length < MIN_PLAYERS) clearTimer();
-  if (Object.keys(state.players).length === 0) { resetLobby(); return; }
+  if (state.status === 'LOBBY' && lobbyPlayers().filter(([, p]) => !p.isBot).length === 0) { removeBots(); clearTimer(); }
+  else if (state.status === 'LOBBY' && lobbyPlayers().length < MIN_PLAYERS) clearTimer();
+  if (Object.values(state.players).filter((p) => !p.isBot).length === 0) { resetLobby(); return; }
   broadcastAll();
   if (state.status === 'VOTING') {
     if (lobbyPlayers().length < MIN_PLAYERS) {
@@ -140,8 +218,8 @@ const playerLeft = (uid) => {
       resolveVote(false);
     }
   } else if (state.status === 'STARTING') {
-    const active = activePlayers();
-    if (active.length < 2) {
+    const humanActive = activePlayers().filter(([, p]) => !p.isBot);
+    if (humanActive.length === 0) {
       clearTimer();
       resetLobby();
     }
@@ -240,12 +318,13 @@ const nextQuestion = () => {
   state.status = 'PLAYING';
   state.round += 1;
   Object.entries(state.players).forEach(([, p]) => {
-    if (p.status === 'waiting' && !p.joinedMidRound) { p.status = 'active'; p.answered = false; }
-    else if (p.status === 'active') p.answered = false;
+    if (p.status === 'waiting' && !p.joinedMidRound) { p.status = 'active'; p.answered = false; p.responseTimeMs = null; }
+    else if (p.status === 'active') { p.answered = false; p.responseTimeMs = null; }
   });
   state.question = { ...generateQuestion(state.round), startedAt: Date.now() };
   log.game(`Round ${state.round} — Question: ${state.question.expression} = ${state.question.answer} — active: ${activePlayers().length}`);
   broadcastAll();
+  scheduleBotAnswers();
   setTimer(TIME_LIMIT * 1000, () => {
     state.status = 'TIMEOUT';
     broadcastAll();
@@ -260,6 +339,7 @@ const eliminateUnanswered = () => {
       p.status = 'eliminated';
       p.answered = true;
       p.eliminatedAt = Date.now();
+      p.eliminatedReason = 'timeout';
       eliminatedUids.push(uid);
       onEvent({
         type: 'answer',
@@ -287,7 +367,8 @@ const submitAnswer = (uid, value) => {
   player.answered = true;
   const correct = Math.abs(value) === Math.abs(state.question.answer);
   player.status = correct ? 'active' : 'eliminated';
-  if (!correct) player.eliminatedAt = Date.now();
+  player.responseTimeMs = Date.now() - state.question.startedAt;
+  if (!correct) { player.eliminatedAt = Date.now(); player.eliminatedReason = 'wrong'; }
   log.game(`Answer: ${player.name} → ${value} (${correct ? 'correct' : 'wrong'})`);
   onEvent({
     type: 'answer',
@@ -315,7 +396,19 @@ const checkGameProgress = (newlyEliminatedUids = []) => {
     endRound(active[0][0], false, newlyEliminatedUids);
     return;
   }
-  if (active.every(([, p]) => p.answered)) endRound(null, false, newlyEliminatedUids);
+  if (active.every(([, p]) => p.answered)) {
+    // Todos respondieron bien — eliminar al más lento
+    const slowest = active.reduce((a, b) => {
+      const aTime = state.players[a[0]].responseTimeMs ?? Infinity;
+      const bTime = state.players[b[0]].responseTimeMs ?? Infinity;
+      return aTime >= bTime ? a : b;
+    });
+    slowest[1].status = 'eliminated';
+    slowest[1].eliminatedAt = Date.now();
+    slowest[1].eliminatedReason = 'slow';
+    log.game(`Slowest eliminated: ${slowest[1].name} (${slowest[1].responseTimeMs}ms)`);
+    endRound(null, false, [...newlyEliminatedUids, slowest[0]]);
+  }
 };
 
 const endRound = (winnerUid, noWinner = false, eliminatedUids = []) => {
@@ -341,6 +434,7 @@ const endGame = (winnerUid, winnerName) => {
   clearTimer();
   state.status = 'GAME_OVER';
   state.winner = winnerName ?? null;
+  state.winnerIsBot = winnerUid ? state.players[winnerUid]?.isBot ?? false : false;
   log.game(`Game over — winner: ${winnerName ?? 'nobody'}`);
   if (winnerUid) {
     onEvent({ type: 'game_over', uid: winnerUid, sessionId: state.sessionId, winner: true, totalRounds: state.round });
@@ -353,19 +447,24 @@ const endGame = (winnerUid, winnerName) => {
 
 const resetLobby = () => {
   clearTimer();
+  removeBots();
   state.status = 'LOBBY';
   state.question = null;
   state.voteRound = 0;
   state.votes = {};
   state.winner = null;
+  state.winnerIsBot = false;
   state.eliminatedThisRound = [];
   state.round = 0;
-  Object.entries(state.players).forEach(([, p]) => { p.status = 'lobby'; p.answered = false; delete p.eliminatedAt; delete p.joinedMidRound; });
+  Object.entries(state.players).forEach(([, p]) => { p.status = 'lobby'; p.answered = false; p.responseTimeMs = null; delete p.eliminatedAt; delete p.eliminatedReason; delete p.joinedMidRound; });
   log.game(`Lobby reset — players: ${Object.keys(state.players).length}`);
   broadcastAll();
   if (lobbyPlayers().length >= MIN_PLAYERS) {
     log.game(`${lobbyPlayers().length} players already in lobby, starting countdown (${LOBBY_WAIT}s)`);
     startLobbyTimer();
+  } else if (lobbyPlayers().filter(([, p]) => !p.isBot).length >= 1) {
+    log.game('Human in lobby after reset, filling with bots');
+    fillWithBots();
   }
 };
 

@@ -6,5 +6,6 @@ const LOBBY_WAIT = parseInt(process.env.LOBBY_WAIT) || 15;
 const VOTE_WAIT = parseInt(process.env.VOTE_WAIT) || 10;
 const RESTART_WAIT = parseInt(process.env.RESTART_WAIT) || 5;
 const ROUND_WAIT = parseInt(process.env.ROUND_WAIT) || 3;
+const BOT_ERROR_RATE = parseFloat(process.env.BOT_ERROR_RATE) || 0.25;
 
-module.exports = { MIN_PLAYERS, MAX_PLAYERS, MAX_VOTE_ROUNDS, TIME_LIMIT, LOBBY_WAIT, VOTE_WAIT, RESTART_WAIT, ROUND_WAIT };
+module.exports = { MIN_PLAYERS, MAX_PLAYERS, MAX_VOTE_ROUNDS, TIME_LIMIT, LOBBY_WAIT, VOTE_WAIT, RESTART_WAIT, ROUND_WAIT, BOT_ERROR_RATE };

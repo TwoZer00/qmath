@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { sendAnswer, leaveLobby } from '../services/game';
-import { colors, shared, fonts } from '../theme';
+import { colors, fonts } from '../theme';
 import LcdProgressBar from '../components/LcdProgressBar';
 import LcdScreen from '../components/LcdScreen';
 import NumPad from '../components/NumPad';
@@ -191,9 +191,12 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
         <View style={s.centerBox}>
           <LcdScreen style={s.lcdCenter}>
             <View style={s.iconRowMb4}>
-              <Icon name="skull-outline" size={18} color={colors.lcdText} />
-              <Text style={s.lcdEliminated}>{T.eliminated}</Text>
+              <Icon name={me?.eliminatedReason === 'slow' ? 'timer-off' : 'skull-outline'} size={18} color={colors.lcdText} />
+              <Text style={s.lcdEliminated}>
+                {me?.eliminatedReason === 'slow' ? T.eliminatedSlow : me?.eliminatedReason === 'timeout' ? T.eliminatedTimeout : T.eliminated}
+              </Text>
             </View>
+            {me?.eliminatedReason === 'slow' && <Text style={s.lcdSub}>{T.eliminatedSlowSub}</Text>}
             {question.revealAnswer && <Text style={s.lcdAnswer}>{question.expression} = {question.display}</Text>}
             <Text style={s.lcdSub}>{T.watching}</Text>
             <Text style={s.lcdQuestion}>{question.expression} = ?</Text>
@@ -216,6 +219,21 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
             <LcdProgressBar timeLeft={timeLeft} total={TIME_LIMIT} />
             <Text style={s.lcdExpr}>{question.expression}</Text>
             <Text style={s.lcdDisplay}>{answer || '_'}</Text>
+            <View style={s.dotsRow}>
+              {Object.entries(players).filter(([, p]) => p.status === 'active' || p.status === 'eliminated').map(([id, p]) => (
+                <Icon
+                  key={id}
+                  name={p.status === 'eliminated' ? 'skull' : p.answered ? 'lightning-bolt' : 'circle'}
+                  size={12}
+                  color={
+                    p.status === 'eliminated' ? colors.lcdTextDim
+                    : p.answered ? colors.lcdText
+                    : id === uid ? colors.lcdText
+                    : colors.lcdTextDim
+                  }
+                />
+              ))}
+            </View>
           </LcdScreen>
           <NumPad
             playKey={playKey}
@@ -226,13 +244,7 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
         </View>
       )}
 
-      <View style={s.playerList}>
-        {activePlayers.map(([id, p]) => (
-          <Text key={id} style={[s.playerName, id === uid && s.playerSelf, p.answered && s.playerAnswered]}>
-            {p.answered ? '✓ ' : ''}{p.name}
-          </Text>
-        ))}
-      </View>
+
     </View>
   );
 }
@@ -259,8 +271,5 @@ const s = StyleSheet.create({
   iconRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   iconRowMb4: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   iconRowMb8: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  playerList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', paddingTop: 12 },
-  playerName: shared.chip,
-  playerSelf: { color: colors.keyTextAlt, borderColor: colors.keyTextAlt },
-  playerAnswered: { color: colors.success, borderColor: colors.success },
+  dotsRow: { flexDirection: 'row', gap: 6, marginBottom: 6 },
 });
