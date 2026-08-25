@@ -12,24 +12,6 @@ const randomBotName = () => {
   return `${adj}${num}`;
 };
 
-const addBots = () => {
-  const humanCount = Object.values(state.players).filter((p) => !p.isBot).length;
-  const needed = MIN_PLAYERS - humanCount;
-  if (needed <= 0) return;
-  const extraBots = Math.floor(Math.random() * (MAX_PLAYERS - MIN_PLAYERS)) + needed;
-  const count = Math.min(extraBots, MAX_PLAYERS - humanCount);
-  const usedNames = new Set(Object.values(state.players).map((p) => p.name));
-  for (let i = 0; i < count; i++) {
-    let name;
-    let attempts = 0;
-    do { name = randomBotName(); attempts++; } while (usedNames.has(name) && attempts < 20);
-    usedNames.add(name);
-    const uid = `bot_${name}_${Date.now()}_${i}`;
-    state.players[uid] = { name, status: 'lobby', joinedAt: Date.now(), answered: false, isBot: true };
-    log.game(`Bot joined: ${name}`);
-  }
-};
-
 const removeBots = () => {
   Object.keys(botTimers).forEach((uid) => { clearTimeout(botTimers[uid]); delete botTimers[uid]; });
   Object.keys(state.players).forEach((uid) => {
@@ -151,9 +133,31 @@ const startLobbyTimer = () => {
 };
 
 const fillWithBots = () => {
-  addBots();
-  broadcastAll();
-  if (!state.timer) startLobbyTimer();
+  const humanCount = Object.values(state.players).filter((p) => !p.isBot).length;
+  const needed = MIN_PLAYERS - humanCount;
+  if (needed <= 0) return;
+  const usedNames = new Set(Object.values(state.players).map((p) => p.name));
+  const extraBots = Math.floor(Math.random() * (MAX_PLAYERS - MIN_PLAYERS)) + needed;
+  const count = Math.min(extraBots, MAX_PLAYERS - humanCount);
+  const botsToAdd = [];
+  for (let i = 0; i < count; i++) {
+    let name;
+    let attempts = 0;
+    do { name = randomBotName(); attempts++; } while (usedNames.has(name) && attempts < 20);
+    usedNames.add(name);
+    botsToAdd.push({ name, uid: `bot_${name}_${Date.now()}_${i}` });
+  }
+  let delay = 2000 + Math.random() * 2000;
+  botsToAdd.forEach((bot) => {
+    setTimeout(() => {
+      if (Object.values(state.players).filter((p) => !p.isBot).length === 0) return;
+      state.players[bot.uid] = { name: bot.name, status: 'lobby', joinedAt: Date.now(), answered: false, isBot: true };
+      log.game(`Bot joined: ${bot.name}`);
+      broadcastAll();
+      if (!state.timer && lobbyPlayers().length >= MIN_PLAYERS) startLobbyTimer();
+    }, delay);
+    delay += 1000 + Math.random() * 2000;
+  });
 };
 
 const playerJoined = (uid, name) => {
