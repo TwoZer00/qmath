@@ -411,7 +411,12 @@ const checkGameProgress = (newlyEliminatedUids = []) => {
     slowest[1].eliminatedAt = Date.now();
     slowest[1].eliminatedReason = 'slow';
     log.game(`Slowest eliminated: ${slowest[1].name} (${slowest[1].responseTimeMs}ms)`);
-    endRound(null, false, [...newlyEliminatedUids, slowest[0]]);
+    const remaining = activePlayers();
+    if (remaining.length === 1) {
+      endRound(remaining[0][0], false, [...newlyEliminatedUids, slowest[0]]);
+    } else {
+      endRound(null, false, [...newlyEliminatedUids, slowest[0]]);
+    }
   }
 };
 
