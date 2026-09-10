@@ -1,5 +1,5 @@
 const { generateQuestion } = require('./questions');
-const { MIN_PLAYERS, MAX_PLAYERS, MAX_VOTE_ROUNDS, TIME_LIMIT, LOBBY_WAIT, VOTE_WAIT, RESTART_WAIT, ROUND_WAIT, BOT_ERROR_RATE } = require('./config');
+const { MIN_PLAYERS, MAX_PLAYERS, MAX_VOTE_ROUNDS, TIME_LIMIT, LOBBY_WAIT, VOTE_WAIT, RESTART_WAIT, ROUND_WAIT, BOT_ERROR_RATE, GRACE_ROUNDS } = require('./config');
 const log = require('./logger');
 
 // ── Bots ─────────────────────────────────────────────────────────────────────
@@ -401,7 +401,11 @@ const checkGameProgress = (newlyEliminatedUids = []) => {
     return;
   }
   if (active.every(([, p]) => p.answered)) {
-    // Todos respondieron bien — eliminar al más lento
+    // Todos respondieron bien — eliminar al más lento (gracia en primeras rondas)
+    if (state.round <= GRACE_ROUNDS) {
+      endRound(null, false, newlyEliminatedUids);
+      return;
+    }
     const slowest = active.reduce((a, b) => {
       const aTime = state.players[a[0]].responseTimeMs ?? Infinity;
       const bTime = state.players[b[0]].responseTimeMs ?? Infinity;

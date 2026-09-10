@@ -4,10 +4,10 @@ import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const useEmulator = process.env.EXPO_PUBLIC_USE_EMULATOR === 'true';
-const EMULATOR_HOST = process.env.EXPO_PUBLIC_EMULATOR_HOST || '192.168.68.63';
+const EMULATOR_HOST = process.env.EXPO_PUBLIC_EMULATOR_HOST || 'localhost';
 
 const firebaseConfig = useEmulator
-  ? { apiKey: 'demo-key', authDomain: 'localhost', projectId: 'qmath' }
+  ? { apiKey: 'demo-key', authDomain: 'localhost', projectId: 'qmath-78ccc' }
   : {
       apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
       authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,

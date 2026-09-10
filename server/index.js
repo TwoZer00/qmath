@@ -14,7 +14,7 @@ const useEmulator = process.env.USE_EMULATOR === 'true';
 if (useEmulator) {
   process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST || '127.0.0.1:9099';
   process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080';
-  admin.initializeApp({ projectId: 'qmath' });
+  admin.initializeApp({ projectId: 'qmath-78ccc' });
   log.warn('Using Firebase emulators (Auth + Firestore)');
 } else {
   let serviceAccount;

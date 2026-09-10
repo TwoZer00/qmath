@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import { colors, fonts } from '../theme';
 import LcdScreen from '../components/LcdScreen';
 import LcdDivider from '../components/LcdDivider';
 import CalcKey from '../components/CalcKey';
+import CalcSwitch from '../components/CalcSwitch';
 import BrandHeader from '../components/BrandHeader';
 import { fetchStats } from '../services/stats';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
@@ -163,17 +164,7 @@ export default function StatsScreen({ uid, navigation, settings }) {
             )}
           </LcdScreen>
           </Animated.View>
-          <View style={s.switchRow}>
-            <Text style={s.switchLabel}>DISPLAY</Text>
-            <View style={s.switchGroup}>
-              <TouchableOpacity style={[s.switchKey, s.switchKeyLeft, on && s.switchKeyActive]} onPress={() => !on && handleToggle()}>
-                <Text style={[s.switchKeyText, on && s.switchKeyTextActive]}>ON</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[s.switchKey, s.switchKeyRight, !on && s.switchKeyActive]} onPress={() => on && handleToggle()}>
-                <Text style={[s.switchKeyText, !on && s.switchKeyTextActive]}>OFF</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <CalcSwitch label="DISPLAY" value={on} onToggle={handleToggle} />
       </ScrollView>
     </View>
   );
@@ -192,14 +183,4 @@ const s = StyleSheet.create({
   opRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   opPct: { fontFamily: fonts.mono, fontSize: 11, color: colors.lcdText, letterSpacing: 1, width: 36, textAlign: 'right' },
   footer: { fontFamily: fonts.mono, fontSize: 9, color: colors.lcdTextDim, letterSpacing: 1, textAlign: 'center', opacity: 0.6 },
-  keyRow: { marginTop: 12 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, paddingHorizontal: 4 },
-  switchLabel: { fontFamily: fonts.mono, fontSize: 11, color: colors.textMuted, letterSpacing: 2 },
-  switchGroup: { flexDirection: 'row' },
-  switchKey: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: colors.keyBg, borderWidth: 1, borderColor: colors.border, borderBottomWidth: 3, borderBottomColor: colors.keyShadow },
-  switchKeyLeft: { borderTopLeftRadius: 4, borderBottomLeftRadius: 4, borderRightWidth: 0 },
-  switchKeyRight: { borderTopRightRadius: 4, borderBottomRightRadius: 4 },
-  switchKeyActive: { backgroundColor: colors.lcdBg, borderColor: colors.lcdBorder, borderBottomColor: colors.lcdBgDark },
-  switchKeyText: { fontFamily: fonts.mono, fontSize: 12, color: colors.textMuted, letterSpacing: 1 },
-  switchKeyTextActive: { color: colors.lcdText },
 });

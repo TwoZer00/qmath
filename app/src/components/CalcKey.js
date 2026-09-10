@@ -13,12 +13,11 @@ export default function CalcKey({ label, icon, variant = 'num', onPress, disable
     if (pressedRef.current) return;
     pressedRef.current = true;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.sequence([
-      Animated.timing(scale, { toValue: 0.9, duration: 40, useNativeDriver: true }),
-      Animated.timing(scale, { toValue: 1,   duration: 50, useNativeDriver: true }),
-    ]).start();
     onPress?.();
-    setTimeout(() => { pressedRef.current = false; }, 80);
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 0.88, duration: 30, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 1,    duration: 30, useNativeDriver: true }),
+    ]).start(() => { pressedRef.current = false; });
   };
 
   const keyStyle = [

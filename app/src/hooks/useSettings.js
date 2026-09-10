@@ -8,23 +8,26 @@ const getDeviceLang = () => {
   return LANGUAGES.includes(locale) ? locale : 'en';
 };
 
-const KEYS = { name: 'playerName', sound: 'soundEnabled', lang: 'language' };
+const KEYS = { name: 'playerName', sound: 'soundEnabled', music: 'musicEnabled', lang: 'language' };
 
 export function useSettings() {
   const [playerName, setPlayerName] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(true);
   const [language, setLanguage] = useState('en');
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [name, sound, lang] = await Promise.all([
+      const [name, sound, music, lang] = await Promise.all([
         AsyncStorage.getItem(KEYS.name),
         AsyncStorage.getItem(KEYS.sound),
+        AsyncStorage.getItem(KEYS.music),
         AsyncStorage.getItem(KEYS.lang),
       ]);
       setPlayerName(name || '');
       setSoundEnabled(sound === null ? true : sound === 'true');
+      setMusicEnabled(music === null ? true : music === 'true');
       setLanguage(lang || getDeviceLang());
       setLoaded(true);
     })();
@@ -45,10 +48,18 @@ export function useSettings() {
     });
   }, []);
 
+  const toggleMusic = useCallback(async () => {
+    setMusicEnabled((prev) => {
+      const next = !prev;
+      AsyncStorage.setItem(KEYS.music, String(next));
+      return next;
+    });
+  }, []);
+
   const setLang = useCallback(async (lang) => {
     setLanguage(lang);
     await AsyncStorage.setItem(KEYS.lang, lang);
   }, []);
 
-  return { playerName, soundEnabled, language, loaded, saveName, toggleSound, setLang };
+  return { playerName, soundEnabled, musicEnabled, language, loaded, saveName, toggleSound, toggleMusic, setLang };
 }

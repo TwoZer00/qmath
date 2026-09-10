@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { sendAnswer, leaveLobby } from '../services/game';
@@ -10,23 +10,50 @@ import CalcKey from '../components/CalcKey';
 import BrandHeader from '../components/BrandHeader';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { t } from '../i18n';
+import { useCountdown } from '../hooks/useCountdown';
 
 const DEFAULT_TIME_LIMIT = parseInt(process.env.EXPO_PUBLIC_TIME_LIMIT) || 5;
 
+const DotsRow = memo(function DotsRow({ players, uid }) {
+  return (
+    <View style={s.dotsRow}>
+      {Object.entries(players)
+        .filter(([, p]) => p.status === 'active' || p.status === 'eliminated')
+        .map(([id, p]) => (
+          <Icon
+            key={id}
+            name={p.status === 'eliminated' ? 'skull' : p.answered ? 'lightning-bolt' : 'circle'}
+            size={12}
+            color={
+              p.status === 'eliminated' ? colors.lcdTextDim
+              : p.answered ? colors.lcdText
+              : id === uid ? colors.lcdText
+              : colors.lcdTextDim
+            }
+          />
+        ))}
+    </View>
+  );
+});
+
 export default function GameScreen({ uid, gameState, connStatus, sound, navigation, settings }) {
   const T = t(settings?.language);
-  const handleExit = useCallback(() => { leaveLobby(); navigation.replace('Home'); }, [navigation]);
   const TIME_LIMIT = gameState?.timeLimit ?? DEFAULT_TIME_LIMIT;
-  const [answer, setAnswer] = useState('');
-  const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
+  const answerRef = useRef('');
   const timerRef = useRef(null);
+  const [, forceUpdate] = React.useState(0);
+  const gameOverNavRef = useRef(null);
   const answeredRef = useRef(false);
   const eliminatedRef = useRef(false);
   const flashAnim = useRef(new Animated.Value(0)).current;
   const prevEliminated = useRef(false);
-  const prevStatus = useRef(null);
   const prevRoundOver = useRef(false);
-  const prevTimeLeft = useRef(TIME_LIMIT);
+  const prevTimeLeft  = useRef(TIME_LIMIT);
+  const prevAnswered  = useRef(false);
+
+
+  const { countdown } = useCountdown(gameState?.timerEndsAt);
+  const timeLeft = countdown ?? TIME_LIMIT;
 
   const question = gameState?.question;
   const players = gameState?.players ?? {};
@@ -41,8 +68,11 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
     () => Object.entries(players).filter(([, p]) => p.status === 'active'),
     [players]
   );
-  const { playKey, playCorrect, playError, playEliminated, playTick, playRoundOver, playVictory } = sound;
+  const { playKey, playCorrect, playError, playEliminated, playTick, playRoundOver, playVictory, setMusicIntensity, playMusic, stopMusic, playStinger, isMusicPlaying, transitionToAmbient, transitionToEliminated } = sound;
 
+  const handleExit = useCallback(() => { stopMusic(); leaveLobby(); navigation.replace('Home'); }, [navigation, stopMusic]);
+
+  // personal elimination — hard drop
   useEffect(() => {
     if (eliminated && !prevEliminated.current) {
       playError();
@@ -53,86 +83,108 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
         Animated.timing(flashAnim, { toValue: 0.6, duration: 80, useNativeDriver: true }),
         Animated.timing(flashAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
       ]).start();
+      transitionToEliminated();
     }
     prevEliminated.current = eliminated;
   }, [eliminated]);
 
+  // game status changes — music keeps playing through GameOver/Lobby, stops only on Home
   useEffect(() => {
-    if (gameState?.status === 'GAME_OVER') { navigation.replace('GameOver'); return; }
-    if (gameState?.status === 'LOBBY') { navigation.replace('Lobby'); return; }
-    if (gameState?.status === 'TIMEOUT') {
-      clearInterval(timerRef.current);
+    if (gameState?.status === 'GAME_OVER') {
+      const delay = eliminatedRef.current ? 2500 : 0;
+      gameOverNavRef.current = setTimeout(() => { navigation.replace('GameOver'); }, delay);
+      return () => clearTimeout(gameOverNavRef.current);
     }
-    if (gameState?.status === 'ROUND_OVER') {
-      clearInterval(timerRef.current);
+    if (gameState?.status === 'LOBBY') {
+      if (gameOverNavRef.current) { clearTimeout(gameOverNavRef.current); gameOverNavRef.current = null; }
+      navigation.replace('Lobby'); return;
     }
-    prevStatus.current = gameState?.status;
   }, [gameState?.status]);
 
+  // new round — restart music only if stopped
   useEffect(() => {
     if (!question?.startedAt) return;
     answeredRef.current = false;
-    setAnswer('');
-    setTimeLeft(TIME_LIMIT);
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => { if (t <= 1) { clearInterval(timerRef.current); return 0; } return t - 1; });
-    }, 1000);
-    return () => clearInterval(timerRef.current);
+    prevAnswered.current = false;
+    answerRef.current = '';
+    forceUpdate((n) => n + 1);
+    if (!isMusicPlaying()) playMusic();
   }, [question?.startedAt]);
 
+  // round over SFX only — no music transition here
   useEffect(() => {
     if (isRoundOver && !prevRoundOver.current) {
       playRoundOver();
-      if (eliminatedThisRound.length > 0) setTimeout(() => playEliminated(), 400);
+      if (eliminatedThisRound.length > 0) {
+        setTimeout(() => playEliminated(), 400);
+        setTimeout(() => playStinger(), 200);
+      }
     }
     prevRoundOver.current = isRoundOver;
   }, [isRoundOver, eliminatedThisRound]);
 
+  // intensity — only fires in PLAYING mode (blocked by modeRef inside setMusicIntensity)
   useEffect(() => {
     if (timeLeft <= 3 && timeLeft > 0 && timeLeft !== prevTimeLeft.current && !answered && !eliminated) playTick();
+    const totalPlayers = Object.keys(players).length || 1;
+    const playerRatio  = activePlayers.length / totalPlayers;
+    const timerRatio   = TIME_LIMIT > 0 ? timeLeft / TIME_LIMIT : 0;
+    setMusicIntensity((playerRatio * 0.5) + (timerRatio * 0.5));
     prevTimeLeft.current = timeLeft;
-  }, [timeLeft]);
+  }, [timeLeft, activePlayers.length]);
 
-  useEffect(() => { if (answered) playCorrect(); }, [answered]);
+  // answered correctly — gentle transition
+  useEffect(() => {
+    if (answered && !prevAnswered.current) {
+      playCorrect();
+      transitionToAmbient();
+    }
+    prevAnswered.current = answered;
+  }, [answered]);
 
+  // game over winner
   const myName = players[uid]?.name;
   useEffect(() => {
-    if (gameState?.status === 'GAME_OVER' && gameState?.winner && gameState.winner === myName) playVictory();
+    if (gameState?.status === 'GAME_OVER' && gameState?.winner && gameState.winner === myName) {
+      transitionToAmbient();
+      setTimeout(() => playVictory(), 300);
+    }
   }, [gameState?.status, myName]);
 
   const questionRef = useRef(question);
   useEffect(() => { questionRef.current = question; }, [question]);
 
-  const handleNumPress = useCallback((d) => {
-    if (answeredRef.current || eliminatedRef.current) return;
-    if (d === '⌫') { setAnswer((a) => a.slice(0, -1)); return; }
-    setAnswer((a) => {
-      if (a.length >= 4) return a;
-      return a + d;
-    });
+  const padRef = useRef(null);
+
+  const handleNumPress = useCallback((d) => padRef.current?.handlePress(d), []);
+  const handleNumSubmit = useCallback(() => padRef.current?.handleSubmit(), []);
+
+  // kept in a ref so NumPad callbacks never change identity
+  useEffect(() => {
+    padRef.current = {
+      handlePress(d) {
+        if (answeredRef.current || eliminatedRef.current) return;
+        if (d === '⌫') { answerRef.current = answerRef.current.slice(0, -1); forceUpdate((n) => n + 1); return; }
+        if (answerRef.current.length >= 4) return;
+        const next = answerRef.current + d;
+        answerRef.current = next;
+        forceUpdate((n) => n + 1);
+        const num = parseInt(next);
+        if (!isNaN(num) && num === Math.abs(questionRef.current?.answer)) {
+          answeredRef.current = true;
+          sendAnswer(num);
+        }
+      },
+      handleSubmit() {
+        if (answeredRef.current || eliminatedRef.current) return;
+        const num = parseInt(answerRef.current);
+        if (!isNaN(num)) { answeredRef.current = true; sendAnswer(num); }
+      },
+    };
   }, []);
 
-  useEffect(() => {
-    if (!answer) return;
-    const num = parseInt(answer);
-    if (!isNaN(num) && num === Math.abs(questionRef.current?.answer)) resolve(num);
-  }, [answer]);
-
-  const handleNumSubmit = useCallback(() => {
-    if (answer !== '') resolve(parseInt(answer));
-  }, [answer]);
-
-  const resolve = (value) => {
-    if (answeredRef.current || eliminatedRef.current || isNaN(value)) return;
-    answeredRef.current = true;
-    clearInterval(timerRef.current);
-    sendAnswer(value);
-  };
-
+  const answer = answerRef.current;
   const round = gameState?.round ?? 1;
-  const diffLabel = round <= 2 ? '+  −' : round <= 5 ? '+  −  ±' : round <= 9 ? '+  −  ×' : '+  −  ×  ÷';
-
 
   if (!question) {
     return (
@@ -219,21 +271,7 @@ export default function GameScreen({ uid, gameState, connStatus, sound, navigati
             <LcdProgressBar timeLeft={timeLeft} total={TIME_LIMIT} />
             <Text style={s.lcdExpr}>{question.expression}</Text>
             <Text style={s.lcdDisplay}>{answer || '_'}</Text>
-            <View style={s.dotsRow}>
-              {Object.entries(players).filter(([, p]) => p.status === 'active' || p.status === 'eliminated').map(([id, p]) => (
-                <Icon
-                  key={id}
-                  name={p.status === 'eliminated' ? 'skull' : p.answered ? 'lightning-bolt' : 'circle'}
-                  size={12}
-                  color={
-                    p.status === 'eliminated' ? colors.lcdTextDim
-                    : p.answered ? colors.lcdText
-                    : id === uid ? colors.lcdText
-                    : colors.lcdTextDim
-                  }
-                />
-              ))}
-            </View>
+            <DotsRow players={players} uid={uid} />
           </LcdScreen>
           <NumPad
             playKey={playKey}

@@ -10,10 +10,8 @@ const ROWS = [
 ];
 
 export default function NumPad({ onPress, onSubmit, disabled, playKey, focusKey }) {
-  const activeTouchRef = useRef(false);
   const inputRef = useRef(null);
   const disabledRef = useRef(disabled);
-  const internalRef = useRef('');
   useEffect(() => { disabledRef.current = disabled; }, [disabled]);
 
   const focus = useCallback(() => inputRef.current?.focus(), []);
@@ -23,10 +21,13 @@ export default function NumPad({ onPress, onSubmit, disabled, playKey, focusKey 
     return () => clearTimeout(t);
   }, [disabled, focusKey]);
 
+  // reset TextInput internal value on new question so it never drifts
+  useEffect(() => {
+    if (inputRef.current) inputRef.current.clear();
+  }, [focusKey]);
+
   const handleKey = (k) => {
-    if (disabled || activeTouchRef.current) return;
-    activeTouchRef.current = true;
-    setTimeout(() => { activeTouchRef.current = false; }, 80);
+    if (disabled) return;
     playKey?.();
     if (k === 'OK') onSubmit();
     else if (k === 'DEL') onPress('⌫');
@@ -35,23 +36,15 @@ export default function NumPad({ onPress, onSubmit, disabled, playKey, focusKey 
 
   const handleChangeText = (text) => {
     if (disabledRef.current) return;
-    const prev = internalRef.current;
-    internalRef.current = text;
-    if (text.length < prev.length) {
-      playKey?.(); onPress('⌫');
-    } else {
-      const added = text.slice(prev.length);
-      for (const ch of added) {
-        if (/^[0-9]$/.test(ch)) { playKey?.(); onPress(ch); }
-      }
-    }
+    // only forward the last character typed — ignore TextInput internal accumulation
+    const ch = text.slice(-1);
+    if (/^[0-9]$/.test(ch)) { playKey?.(); onPress(ch); }
+    // always clear so TextInput never builds up its own state
+    inputRef.current?.clear();
   };
 
   const handleSubmit = () => {
-    if (!disabledRef.current) {
-      onSubmit();
-      setTimeout(focus, 50);
-    }
+    if (!disabledRef.current) { onSubmit(); setTimeout(focus, 50); }
   };
 
   return (

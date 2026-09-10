@@ -37,7 +37,8 @@
       "expo-font",
       "expo-audio",
       "expo-localization",
-      "expo-asset"
+      "expo-asset",
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {

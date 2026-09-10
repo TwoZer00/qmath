@@ -135,11 +135,17 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
   const [myVote, setMyVote] = useState(null);
   const { countdown } = useCountdown(gameState?.timerEndsAt);
 
-  const { playKey, playJoin, playVote } = sound;
+  const { playKey, playJoin, playVote, playMusic, transitionToAmbient, stopMusic } = sound;
   const prevPlayerCount = useRef(null);
   const prevStatus = useRef(null);
   const lobbyPlayers = gameState ? Object.entries(gameState.players || {}).filter(([, p]) => p.status === 'lobby') : [];
   const humanLobbyPlayers = lobbyPlayers.filter(([, p]) => !p.isBot);
+
+  // start ambient music when entering lobby, keep it alive
+  useEffect(() => {
+    playMusic();
+    transitionToAmbient();
+  }, []);
 
   const joinedRef = useRef(false);
 
@@ -186,7 +192,7 @@ export default function LobbyScreen({ uid, gameState, connStatus, sound, navigat
 
   const practicePadRef = useRef(null);
 
-  const handleGoBack = useCallback(() => navigation.goBack(), [navigation]);
+  const handleGoBack = useCallback(() => { stopMusic(); navigation.goBack(); }, [navigation, stopMusic]);
   const handleVoteStart = useCallback(() => { if (myVote) return; setMyVote('start'); sendVote('start'); }, [myVote]);
   const handleVoteWait = useCallback(() => { if (myVote) return; setMyVote('wait'); sendVote('wait'); }, [myVote]);
   const handlePadPress = useCallback((d) => practicePadRef.current?.handlePad(d), []);

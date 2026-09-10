@@ -28,7 +28,7 @@ export default function App() {
   const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
   const attemptRef = useRef(0);
   const settings = useSettings();
-  const sound = useSound(settings.soundEnabled);
+  const sound = useSound(settings.soundEnabled, settings.musicEnabled);
   const [localUid, setLocalUid] = useState(null);
 
   useEffect(() => {

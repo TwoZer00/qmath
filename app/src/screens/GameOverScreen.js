@@ -10,16 +10,21 @@ import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import CalcKey from '../components/CalcKey';
 import { t } from '../i18n';
 
-export default function GameOverScreen({ uid, gameState, navigation, settings }) {
+export default function GameOverScreen({ uid, gameState, sound, navigation, settings }) {
   const insets = useSafeAreaInsets();
   const T = t(settings?.language);
   const winner = gameState?.winner;
   const winnerIsBot = gameState?.winnerIsBot ?? false;
   const players = gameState?.players || {};
   const { countdown } = useCountdown(gameState?.timerEndsAt);
+  const { stopMusic, transitionToAmbient } = sound;
 
   const isWinner = winner && players[uid]?.name === winner;
   const noWinner = !winner;
+
+  useEffect(() => {
+    transitionToAmbient();
+  }, []);
 
   useEffect(() => {
     if (gameState?.status === 'LOBBY') {
@@ -28,7 +33,7 @@ export default function GameOverScreen({ uid, gameState, navigation, settings })
     }
   }, [gameState?.status]);
 
-  const handleGoHome = useCallback(() => { leaveLobby(); navigation.replace('Home'); }, [navigation]);
+  const handleGoHome = useCallback(() => { stopMusic(); leaveLobby(); navigation.replace('Home'); }, [navigation, stopMusic]);
 
   if (!gameState) return null;
 
