@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, Component } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { BebasNeue_400Regular } from '@expo-google-fonts/bebas-neue';
@@ -20,21 +20,64 @@ import SettingsScreen from './src/screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
+class ErrorBoundary extends Component {
+  state = { crashed: false };
+  static getDerivedStateFromError() { return { crashed: true }; }
+  render() {
+    if (this.state.crashed)
+      return (
+        <View style={{ flex: 1, backgroundColor: '#0a0a0f', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#e8eaf0', fontFamily: 'System', fontSize: 16, textAlign: 'center' }}>
+            Something went wrong.{'\n'}Please restart the app.
+          </Text>
+        </View>
+      );
+    return this.props.children;
+  }
+}
+
+const noop = () => {};
+const SILENT_SOUND = {
+  playMusic: noop, stopMusic: noop, isMusicPlaying: () => false,
+  setMusicIntensity: noop, transitionToAmbient: noop, transitionToEliminated: noop,
+  playStinger: noop, playKey: noop, playCorrect: noop, playError: noop,
+  playEliminated: noop, playTick: noop, playRoundOver: noop,
+  playVictory: noop, playJoin: noop, playVote: noop,
+};
+
+function SoundProvider({ children, soundEnabled, musicEnabled }) {
+  let sound;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    sound = useSound(soundEnabled, musicEnabled);
+  } catch {
+    sound = SILENT_SOUND;
+  }
+  return children(sound);
+}
+
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({ BebasNeue_400Regular, Rajdhani_500Medium, Rajdhani_600SemiBold, Rajdhani_700Bold, ShareTechMono_400Regular });
+  const [fontTimeout, setFontTimeout] = useState(false);
   const [user, setUser] = useState(null);
   const [gameState, setGameState] = useState(null);
   const [connStatus, setConnStatus] = useState('connecting');
   const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
   const attemptRef = useRef(0);
   const settings = useSettings();
-  const sound = useSound(settings.soundEnabled, settings.musicEnabled);
   const [localUid, setLocalUid] = useState(null);
 
   useEffect(() => {
+    if (!auth) return;
     const unsub = auth.onAuthStateChanged((u) => { if (u) setLocalUid(u.uid); });
     return unsub;
   }, []);
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) return;
+    const t = setTimeout(() => setFontTimeout(true), 5000);
+    return () => clearTimeout(t);
+  }, [fontsLoaded, fontError]);
 
   const tryConnect = useRef(null);
 
@@ -71,7 +114,7 @@ export default function App() {
           clearTimeout(wakingTimer);
           if (e?.message === 'AUTH_ERROR') {
             setConnStatus('error');
-            return; // no retry — auth error is not transient
+            return;
           }
           const next = Math.min(delay * 1.5, 30000);
           setTimeout(() => { if (attemptRef.current === attempt) tryConnect.current(next); }, delay);
@@ -82,34 +125,31 @@ export default function App() {
   }, []);
 
   const uid = user?.uid ?? localUid;
-  const screenProps = useMemo(
-    () => ({ uid, gameState, connStatus, sound, hasPlayedOnce, settings }),
-    [uid, gameState, connStatus, sound, hasPlayedOnce, settings]
-  );
 
-  const HomeScreenComp   = useCallback((props) => <HomeScreen {...props} settings={settings} uid={localUid} connStatus={connStatus} />, [settings, localUid, connStatus]);
-  const LobbyScreenComp  = useCallback((props) => <LobbyScreen {...props} {...screenProps} />, [screenProps]);
-  const GameScreenComp   = useCallback((props) => <GameScreen {...props} {...screenProps} />, [screenProps]);
-  const GameOverComp     = useCallback((props) => <GameOverScreen {...props} {...screenProps} />, [screenProps]);
-  const StatsScreenComp  = useCallback((props) => <StatsScreen {...props} uid={user?.uid} settings={settings} />, [user?.uid, settings]);
-  const SettingsComp     = useCallback((props) => <SettingsScreen {...props} settings={settings} uid={localUid} />, [settings, localUid]);
-
-  if (!fontsLoaded && !fontError) return <View style={{ flex: 1, backgroundColor: '#0a0a0f' }} />;
+  if (!fontsLoaded && !fontError && !fontTimeout) return <View style={{ flex: 1, backgroundColor: '#0a0a0f' }} />;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
-      <NavigationContainer>
-        <StatusBar style="light" backgroundColor="#0a0a0f" />
-        <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#1a1a2e' }, gestureEnabled: false }}>
-        <Stack.Screen name="Home">{HomeScreenComp}</Stack.Screen>
-        <Stack.Screen name="Lobby">{LobbyScreenComp}</Stack.Screen>
-        <Stack.Screen name="Game">{GameScreenComp}</Stack.Screen>
-        <Stack.Screen name="GameOver">{GameOverComp}</Stack.Screen>
-        <Stack.Screen name="Stats">{StatsScreenComp}</Stack.Screen>
-        <Stack.Screen name="Settings">{SettingsComp}</Stack.Screen>
-      </Stack.Navigator>
-      </NavigationContainer>
-    </View>
+    <ErrorBoundary>
+      <SoundProvider soundEnabled={settings.soundEnabled} musicEnabled={settings.musicEnabled}>
+        {(sound) => {
+          const screenProps = { uid, gameState, connStatus, sound, hasPlayedOnce, settings };
+          return (
+            <View style={{ flex: 1, backgroundColor: '#0a0a0f' }}>
+              <NavigationContainer>
+                <StatusBar style="light" backgroundColor="#0a0a0f" />
+                <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#1a1a2e' }, gestureEnabled: false }}>
+                  <Stack.Screen name="Home">{(props) => <HomeScreen {...props} settings={settings} uid={localUid} connStatus={connStatus} />}</Stack.Screen>
+                  <Stack.Screen name="Lobby">{(props) => <LobbyScreen {...props} {...screenProps} />}</Stack.Screen>
+                  <Stack.Screen name="Game">{(props) => <GameScreen {...props} {...screenProps} />}</Stack.Screen>
+                  <Stack.Screen name="GameOver">{(props) => <GameOverScreen {...props} {...screenProps} />}</Stack.Screen>
+                  <Stack.Screen name="Stats">{(props) => <StatsScreen {...props} uid={user?.uid} settings={settings} />}</Stack.Screen>
+                  <Stack.Screen name="Settings">{(props) => <SettingsScreen {...props} settings={settings} uid={localUid} />}</Stack.Screen>
+                </Stack.Navigator>
+              </NavigationContainer>
+            </View>
+          );
+        }}
+      </SoundProvider>
+    </ErrorBoundary>
   );
 }
-

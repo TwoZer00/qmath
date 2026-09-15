@@ -56,9 +56,13 @@ export default function NumPad({ onPress, onSubmit, disabled, playKey, focusKey 
         onSubmitEditing={handleSubmit}
         onBlur={() => setTimeout(focus, 50)}
         returnKeyType="done"
+        inputMode="numeric"
         autoFocus
         caretHidden
         showSoftInputOnFocus={false}
+        autoCorrect={false}
+        autoComplete="off"
+        spellCheck={false}
       />
       {ROWS.map((row, i) => (
         <View key={i} style={s.row}>

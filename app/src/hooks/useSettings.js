@@ -19,17 +19,22 @@ export function useSettings() {
 
   useEffect(() => {
     (async () => {
-      const [name, sound, music, lang] = await Promise.all([
-        AsyncStorage.getItem(KEYS.name),
-        AsyncStorage.getItem(KEYS.sound),
-        AsyncStorage.getItem(KEYS.music),
-        AsyncStorage.getItem(KEYS.lang),
-      ]);
-      setPlayerName(name || '');
-      setSoundEnabled(sound === null ? true : sound === 'true');
-      setMusicEnabled(music === null ? true : music === 'true');
-      setLanguage(lang || getDeviceLang());
-      setLoaded(true);
+      try {
+        const [name, sound, music, lang] = await Promise.all([
+          AsyncStorage.getItem(KEYS.name),
+          AsyncStorage.getItem(KEYS.sound),
+          AsyncStorage.getItem(KEYS.music),
+          AsyncStorage.getItem(KEYS.lang),
+        ]);
+        setPlayerName(name || '');
+        setSoundEnabled(sound === null ? true : sound === 'true');
+        setMusicEnabled(music === null ? true : music === 'true');
+        setLanguage(lang || getDeviceLang());
+      } catch {
+        // AsyncStorage unavailable — proceed with defaults
+      } finally {
+        setLoaded(true);
+      }
     })();
   }, []);
 

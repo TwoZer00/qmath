@@ -14,11 +14,18 @@ const firebaseConfig = useEmulator
       projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
     };
 
-const app = initializeApp(firebaseConfig);
-export const auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
-export const db = getFirestore(app);
-
-if (useEmulator) {
-  connectAuthEmulator(auth, `http://${EMULATOR_HOST}:9099`, { disableWarnings: true });
-  connectFirestoreEmulator(db, EMULATOR_HOST, 8080);
+let auth, db;
+try {
+  const app = initializeApp(firebaseConfig);
+  auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
+  db = getFirestore(app);
+  if (useEmulator) {
+    connectAuthEmulator(auth, `http://${EMULATOR_HOST}:9099`, { disableWarnings: true });
+    connectFirestoreEmulator(db, EMULATOR_HOST, 8080);
+  }
+} catch (e) {
+  console.error('[firebase] init failed:', e);
+  auth = null;
+  db = null;
 }
+export { auth, db };
