@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, TextInput, StyleSheet, Keyboard } from 'react-native';
+import { View, TextInput, StyleSheet, Platform } from 'react-native';
 import CalcKey from './CalcKey';
+
+const IS_MACOS = Platform.OS === 'macos';
 
 const ROWS = [
   ['7', '8', '9'],
@@ -14,17 +16,19 @@ export default function NumPad({ onPress, onSubmit, disabled, playKey, focusKey 
   const disabledRef = useRef(disabled);
   useEffect(() => { disabledRef.current = disabled; }, [disabled]);
 
-  const focus = useCallback(() => {
-    inputRef.current?.focus();
-    // showSoftInputOnFocus={false} is not always respected on iPadOS —
-    // dismiss the soft keyboard immediately after focusing to be safe.
-    Keyboard.dismiss();
-  }, []);
+  const focus = useCallback(() => inputRef.current?.focus(), []);
 
   useEffect(() => {
+    if (!IS_MACOS) return;
     const t = setTimeout(focus, 50);
     return () => clearTimeout(t);
   }, [disabled, focusKey]);
+
+  // reset TextInput internal value on new question so it never drifts
+  useEffect(() => {
+    if (!IS_MACOS) return;
+    if (inputRef.current) inputRef.current.clear();
+  }, [focusKey]);
 
   // reset TextInput internal value on new question so it never drifts
   useEffect(() => {
@@ -54,21 +58,23 @@ export default function NumPad({ onPress, onSubmit, disabled, playKey, focusKey 
 
   return (
     <View style={s.grid}>
-      <TextInput
-        ref={inputRef}
-        style={s.hidden}
-        onChangeText={handleChangeText}
-        onSubmitEditing={handleSubmit}
-        onBlur={() => setTimeout(focus, 50)}
-        returnKeyType="done"
-        inputMode="numeric"
-        autoFocus
-        caretHidden
-        showSoftInputOnFocus={false}
-        autoCorrect={false}
-        autoComplete="off"
-        spellCheck={false}
-      />
+      {IS_MACOS && (
+        <TextInput
+          ref={inputRef}
+          style={s.hidden}
+          onChangeText={handleChangeText}
+          onSubmitEditing={handleSubmit}
+          onBlur={() => setTimeout(focus, 50)}
+          returnKeyType="done"
+          inputMode="numeric"
+          autoFocus
+          caretHidden
+          showSoftInputOnFocus={false}
+          autoCorrect={false}
+          autoComplete="off"
+          spellCheck={false}
+        />
+      )}
       {ROWS.map((row, i) => (
         <View key={i} style={s.row}>
           {row.map((k) => (
