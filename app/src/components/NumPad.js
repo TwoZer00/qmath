@@ -1,6 +1,10 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
+import { View, TextInput, StyleSheet, Platform } from 'react-native';
 import CalcKey from './CalcKey';
+
+// Hardware keyboard input is only useful on iPad/macOS — on iPhone it just
+// triggers the system numpad which conflicts with our custom CalcKey pad.
+const SUPPORTS_HW_KEYBOARD = Platform.OS !== 'ios' || Platform.isPad;
 
 const ROWS = [
   ['7', '8', '9'],
@@ -49,21 +53,23 @@ export default function NumPad({ onPress, onSubmit, disabled, playKey, focusKey 
 
   return (
     <View style={s.grid}>
-      <TextInput
-        ref={inputRef}
-        style={s.hidden}
-        onChangeText={handleChangeText}
-        onSubmitEditing={handleSubmit}
-        onBlur={() => setTimeout(focus, 50)}
-        returnKeyType="done"
-        inputMode="numeric"
-        autoFocus
-        caretHidden
-        showSoftInputOnFocus={false}
-        autoCorrect={false}
-        autoComplete="off"
-        spellCheck={false}
-      />
+      {SUPPORTS_HW_KEYBOARD && (
+        <TextInput
+          ref={inputRef}
+          style={s.hidden}
+          onChangeText={handleChangeText}
+          onSubmitEditing={handleSubmit}
+          onBlur={() => setTimeout(focus, 50)}
+          returnKeyType="done"
+          inputMode="numeric"
+          autoFocus
+          caretHidden
+          showSoftInputOnFocus={false}
+          autoCorrect={false}
+          autoComplete="off"
+          spellCheck={false}
+        />
+      )}
       {ROWS.map((row, i) => (
         <View key={i} style={s.row}>
           {row.map((k) => (
